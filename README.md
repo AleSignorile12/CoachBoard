@@ -1,8 +1,8 @@
-![Tracker: Your whole team in one place](.github/banner.gif)
+![CoachBoard: Your whole team in one place](.github/banner.gif)
 
-# Tracker: A Team App for Kids' Coaches
+# CoachBoard: A Team App for Kids' Coaches
 
-**Your whole team in one place.** Tracker is an iPhone app for coaching a kids' team: who's on the team, who has paid this month, which documents are still missing, whose birthday is coming up, when the next practice is, and an offline translator for talking with kids who speak another language.
+**Your whole team in one place.** CoachBoard is an iPhone app for coaching a kids' team: who's on the team, who has paid this month, which documents are still missing, whose birthday is coming up, when the next practice is, and an offline translator for talking with kids who speak another language.
 
 <p align="center">
   <img src=".github/screenshots/1-welcome.png" width="19%" alt="Welcome screen: what the app does, with page dots and a Continue button">
@@ -24,7 +24,7 @@
 - **Language:** Swift with SwiftUI, SwiftData and CloudKit. One dependency: Google ML Kit for offline translation, through CocoaPods.
 - **App languages:** English, Italian, Croatian, Spanish, French, German and Portuguese
 - **Privacy:** the data lives on the iPhone and in the coach's own private iCloud. Translation runs on the device.
-- **Status:** on TestFlight as **CoachBoard** (see [Status](#status-what-is-verified-and-what-isnt)).
+- **Status:** on TestFlight (see [Status](#status-what-is-verified-and-what-isnt)).
 
 ---
 
@@ -56,7 +56,7 @@ Also:
 - **Reports.** A PDF of the month (payments and practice log) or of the whole season (every kid, month by month), from the Report menu in Payments. The report can be in English or Italian, whatever language the app is in. Quick Look opens it with the share button, for Mail, WhatsApp, Files or printing.
 - **Widgets.** Next Birthdays, Payments (who paid this month) and Next Practice, on the Home Screen and the Lock Screen.
 - **iCloud sync.** Kids, payments, files and the practice log are saved in the coach's iCloud, so they come back after deleting the app and stay in sync across devices.
-- **Face ID lock.** Optional: Tracker asks for Face ID or the passcode every time it opens and stays hidden in the app switcher.
+- **Face ID lock.** Optional: CoachBoard asks for Face ID or the passcode every time it opens and stays hidden in the app switcher.
 - **Practice calendar.** Pick the training days, mark each one held or not held, and write a note on any day.
 - **Documents.** Scan a paper with the camera, or import a file. Open any file to preview it.
 - **Birthdays.** Reminders a week before and two days before, then on the day. Opening the app on someone's birthday shoots confetti and shows "Happy birthday".
@@ -145,8 +145,10 @@ A season runs from September to August. A registration paid in any month of the 
 
 ## Project structure
 
+The app started out as Tracker, and the code still uses that name: the Xcode project, the targets, the folders and the bundle identifiers.
+
 ```
-Tracker/
+CoachBoard/
 ├── Tracker/
 │   ├── TrackerApp.swift      Tabs, iCloud store, launch animation, birthday celebration
 │   ├── Models/               SwiftData models, fees, months and seasons
@@ -188,7 +190,7 @@ Pick the **Tracker** scheme and run on an iPhone. Signing uses your own team. Th
 
 **Verified**
 
-- The full app builds for iPhone with no warnings and runs on a real iPhone through TestFlight, where it's called CoachBoard.
+- The full app builds for iPhone with no warnings and runs on a real iPhone through TestFlight.
 - The app minus the ML Kit pod runs in the iOS simulator. The screenshots come from that build, filled with made-up kids, with iCloud turned off.
 - The launch animation, the Face ID hand-off, the widgets and the reports in both languages were checked in that simulator build.
 
