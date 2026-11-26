@@ -24,7 +24,7 @@
 - **Language:** Swift with SwiftUI, SwiftData and CloudKit. One dependency: Google ML Kit for offline translation, through CocoaPods.
 - **App languages:** English, Italian, Croatian, Spanish, French, German and Portuguese
 - **Privacy:** the data lives on the iPhone and in the coach's own private iCloud. Translation runs on the device.
-- **Status:** on TestFlight (see [Status](#status-what-is-verified-and-what-isnt)).
+- **Status:** on TestFlight as **CoachBoard**, since the name Tracker was taken on the App Store (see [Status](#status-what-is-verified-and-what-isnt)).
 
 ---
 
@@ -188,7 +188,7 @@ Pick the **Tracker** scheme and run on an iPhone. Signing uses your own team. Th
 
 **Verified**
 
-- The full app builds for iPhone with no warnings and runs on a real iPhone through TestFlight.
+- The full app builds for iPhone with no warnings and runs on a real iPhone through TestFlight, where it's called CoachBoard.
 - The app minus the ML Kit pod runs in the iOS simulator. The screenshots come from that build, filled with made-up kids, with iCloud turned off.
 - The launch animation, the Face ID hand-off, the widgets and the reports in both languages were checked in that simulator build.
 
