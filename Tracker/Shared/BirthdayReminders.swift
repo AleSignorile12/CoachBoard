@@ -65,16 +65,16 @@ enum BirthdayReminders {
                 return calendar.date(bySettingHour: hour, minute: 0, second: 0, of: date) ?? date
             }
             result += [
-                Reminder(date: at(7, 10), title: "🎂 \(name)'s birthday in one week",
-                         body: "\(name) turns \(age) on \(day)."),
-                Reminder(date: at(2, 10), title: "🎂 \(name)'s birthday in 2 days",
-                         body: "\(name) turns \(age) on \(day)."),
-                Reminder(date: at(0, 0), title: "🎂 Today is \(name)'s birthday!",
-                         body: "\(name) turns \(age) today."),
-                Reminder(date: at(0, 9), title: "🎂 \(name) turns \(age) today",
-                         body: "Don't forget to wish \(name) a happy birthday!"),
-                Reminder(date: at(0, 13), title: "🎂 Birthday reminder",
-                         body: "\(name) turns \(age) today 🎉"),
+                Reminder(date: at(7, 10), title: String(localized: "🎂 \(name)'s birthday in one week"),
+                         body: String(localized: "\(name) turns \(age) on \(day).")),
+                Reminder(date: at(2, 10), title: String(localized: "🎂 \(name)'s birthday in 2 days"),
+                         body: String(localized: "\(name) turns \(age) on \(day).")),
+                Reminder(date: at(0, 0), title: String(localized: "🎂 Today is \(name)'s birthday!"),
+                         body: String(localized: "\(name) turns \(age) today.")),
+                Reminder(date: at(0, 9), title: String(localized: "🎂 \(name) turns \(age) today"),
+                         body: String(localized: "Don't forget to wish \(name) a happy birthday!")),
+                Reminder(date: at(0, 13), title: String(localized: "🎂 Birthday reminder"),
+                         body: String(localized: "\(name) turns \(age) today 🎉")),
             ]
         }
         return result.filter { $0.date > now }

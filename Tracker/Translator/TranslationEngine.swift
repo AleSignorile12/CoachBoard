@@ -5,20 +5,53 @@ import MLKitTranslate
 
 /// Google ML Kit on-device translation. Apple's Translation framework has no Croatian, so ML Kit it is.
 /// Each language model (~30 MB) downloads once; after that everything runs offline.
-enum AppLanguage: String, CaseIterable, Identifiable, Codable {
-    case english = "en", italian = "it", turkish = "tr", croatian = "hr", french = "fr", portuguese = "pt"
+///
+/// A struct rather than an enum so every ML Kit language fits without 59 cases. It still saves as the bare
+/// language code ("it"), exactly like the old enum did, so saved phrases and settings keep loading.
+nonisolated struct AppLanguage: RawRepresentable, Hashable, Identifiable, Codable {
+    let rawValue: String
+
+    init(rawValue: String) { self.rawValue = rawValue }
+
+    init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 
     var id: String { rawValue }
 
+    static let english = AppLanguage(rawValue: "en")
+    static let italian = AppLanguage(rawValue: "it")
+    static let croatian = AppLanguage(rawValue: "hr")
+
+    /// Every language ML Kit translates, with the country whose flag stands for it.
+    private static let regions: [String: String] = [
+        "af": "ZA", "sq": "AL", "ar": "SA", "be": "BY", "bn": "BD", "bg": "BG", "ca": "AD", "zh": "CN",
+        "hr": "HR", "cs": "CZ", "da": "DK", "nl": "NL", "en": "GB", "eo": "", "et": "EE", "fi": "FI",
+        "fr": "FR", "gl": "ES", "ka": "GE", "de": "DE", "el": "GR", "gu": "IN", "ht": "HT", "he": "IL",
+        "hi": "IN", "hu": "HU", "is": "IS", "id": "ID", "ga": "IE", "it": "IT", "ja": "JP", "kn": "IN",
+        "ko": "KR", "lv": "LV", "lt": "LT", "mk": "MK", "ms": "MY", "mt": "MT", "mr": "IN", "no": "NO",
+        "fa": "IR", "pl": "PL", "pt": "PT", "ro": "RO", "ru": "RU", "sk": "SK", "sl": "SI", "es": "ES",
+        "sw": "KE", "sv": "SE", "tl": "PH", "ta": "IN", "te": "IN", "th": "TH", "tr": "TR", "uk": "UA",
+        "ur": "PK", "vi": "VN", "cy": "GB",
+    ]
+
+    /// All 59 languages, sorted by name in the phone's language.
+    static let allCases: [AppLanguage] = regions.keys.map(AppLanguage.init(rawValue:))
+        .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+
     /// Voice locale for reading text aloud.
     var speechCode: String {
-        switch self {
-        case .english: "en-GB"
-        case .italian: "it-IT"
-        case .turkish: "tr-TR"
-        case .croatian: "hr-HR"
-        case .french: "fr-FR"
-        case .portuguese: "pt-PT"
+        switch rawValue {
+        case "no": "nb-NO"
+        case "tl": "fil-PH"
+        case "ca", "gl": "\(rawValue)-ES"
+        case "eo": "eo"
+        default: "\(rawValue)-\(Self.regions[rawValue] ?? "")"
         }
     }
 
@@ -26,14 +59,16 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         Locale.current.localizedString(forLanguageCode: rawValue)?.localizedCapitalized ?? rawValue
     }
 
+    /// The language's name in itself ("Hrvatski"), shown under the name in the pickers.
+    var nativeName: String {
+        Locale(identifier: rawValue).localizedString(forLanguageCode: rawValue)?.localizedCapitalized ?? name
+    }
+
     var flag: String {
-        switch self {
-        case .english: "🇬🇧"
-        case .italian: "🇮🇹"
-        case .turkish: "🇹🇷"
-        case .croatian: "🇭🇷"
-        case .french: "🇫🇷"
-        case .portuguese: "🇵🇹"
+        switch rawValue {
+        case "eo": "🌍"
+        case "cy": "🏴\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}" // Wales
+        default: Country.flag(Self.regions[rawValue] ?? "")
         }
     }
 }
@@ -42,7 +77,7 @@ enum TranslationError: LocalizedError {
     case engineMissing
 
     var errorDescription: String? {
-        "Translation engine not installed. Run `pod install` and open Tracker.xcworkspace."
+        String(localized: "Translation engine not installed. Run `pod install` and open Tracker.xcworkspace.")
     }
 }
 
@@ -55,14 +90,8 @@ final class TranslationEngine {
     private let conditions = ModelDownloadConditions(allowsCellularAccess: true, allowsBackgroundDownloading: true)
 
     private func mlLanguage(_ language: AppLanguage) -> TranslateLanguage {
-        switch language {
-        case .english: .english
-        case .italian: .italian
-        case .turkish: .turkish
-        case .croatian: .croatian
-        case .french: .french
-        case .portuguese: .portuguese
-        }
+        // ML Kit's language constants are the same BCP-47 codes used as raw values here.
+        TranslateLanguage(rawValue: language.rawValue)
     }
 
     private func model(_ language: AppLanguage) -> TranslateRemoteModel {

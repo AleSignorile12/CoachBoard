@@ -23,6 +23,7 @@ struct TranslatorView: View {
     @State private var showLanguages = false
     @State private var showCalendar = false
     @State private var swapTurns = 0
+    @State private var picking: LanguageSide?
     @State private var speaker = AVSpeechSynthesizer()
     @AppStorage("savedPhrases") private var savedData = Data()
 
@@ -57,6 +58,7 @@ struct TranslatorView: View {
                 savedSection
             }
             .listSectionSpacing(14)
+            .ambientBackground()
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Translator")
             .toolbar {
@@ -74,6 +76,11 @@ struct TranslatorView: View {
             .sheet(isPresented: $showCalendar) { PracticeCalendarSheet() }
             .sheet(isPresented: $showProfile) { CoachProfileSheet() }
             .sheet(isPresented: $showLanguages) { LanguagesSheet(engine: engine) }
+            .sheet(item: $picking) { side in
+                LanguagePickerSheet(selected: side == .source ? source : target, engine: engine) { language in
+                    side == .source ? setSource(language) : setTarget(language)
+                }
+            }
             .task(id: "\(source.rawValue)>\(target.rawValue):\(input)") { await translate() }
             .onAppear { engine.refresh() }
         }
@@ -83,36 +90,25 @@ struct TranslatorView: View {
 
     private var languageBar: some View {
         HStack(spacing: 8) {
-            languageMenu(source) { setSource($0) }
+            languageButton(source, side: .source)
             Button(action: swap) {
                 Image(systemName: "arrow.left.arrow.right")
                     .rotationEffect(.degrees(Double(swapTurns) * 180))
             }
             .accessibilityLabel("Swap languages")
             .font(.headline)
-            .buttonStyle(.glass)
+            .popButton()
             .buttonBorderShape(.circle)
             .sensoryFeedback(.impact(weight: .light), trigger: swapTurns)
-            languageMenu(target) { setTarget($0) }
+            languageButton(target, side: .target)
         }
         .padding(6)
         .glassEffect(.regular, in: .capsule)
     }
 
-    private func languageMenu(_ selected: AppLanguage, onPick: @escaping (AppLanguage) -> Void) -> some View {
-        Menu {
-            ForEach(AppLanguage.allCases) { language in
-                Button {
-                    onPick(language)
-                } label: {
-                    if language == selected {
-                        Label("\(language.flag) \(language.name)", systemImage: "checkmark")
-                    } else {
-                        Text("\(language.flag) \(language.name)")
-                    }
-                }
-            }
-        } label: {
+    /// Opens the searchable list of all languages (59 is too many for a menu).
+    private func languageButton(_ selected: AppLanguage, side: LanguageSide) -> some View {
+        Button { picking = side } label: {
             Text("\(selected.flag) \(selected.name)")
                 .font(.headline)
                 .lineLimit(1)
@@ -121,6 +117,8 @@ struct TranslatorView: View {
                 .contentShape(.capsule)
         }
         .tint(.primary)
+        .accessibilityLabel(side == .source ? "From \(selected.name)" : "To \(selected.name)")
+        .accessibilityHint("Choose a language")
     }
 
     private var downloadHint: some View {
@@ -146,7 +144,9 @@ struct TranslatorView: View {
                 .lineLimit(3...12)
             if !input.isEmpty {
                 HStack(spacing: 18) {
-                    Button("Read Aloud", systemImage: "speaker.wave.2") { speak(input, source) }
+                    if source.voice != nil {
+                        Button("Read Aloud", systemImage: "speaker.wave.2") { speak(input, source) }
+                    }
                     Spacer()
                     Button("Clear", systemImage: "xmark.circle.fill") { input = "" }
                         .foregroundStyle(.secondary)
@@ -175,7 +175,9 @@ struct TranslatorView: View {
             } else {
                 Text(output).font(.title3).textSelection(.enabled)
                 HStack(spacing: 18) {
-                    Button("Read Aloud", systemImage: "speaker.wave.2") { speak(output, target) }
+                    if target.voice != nil {
+                        Button("Read Aloud", systemImage: "speaker.wave.2") { speak(output, target) }
+                    }
                     Spacer()
                     Button(isSaved ? "Remove from Saved" : "Save Phrase", systemImage: isSaved ? "star.fill" : "star") {
                         toggleSaved()
@@ -219,9 +221,11 @@ struct TranslatorView: View {
                             .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
-                        Button("Read Aloud", systemImage: "speaker.wave.2") { speak(phrase.translation, phrase.target) }
-                            .labelStyle(.iconOnly)
-                            .buttonStyle(.borderless)
+                        if phrase.target.voice != nil {
+                            Button("Read Aloud", systemImage: "speaker.wave.2") { speak(phrase.translation, phrase.target) }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(.borderless)
+                        }
                     }
                     .swipeActions {
                         Button("Delete", systemImage: "trash", role: .destructive) {
@@ -260,7 +264,7 @@ struct TranslatorView: View {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: .duckOthers)
         speaker.stopSpeaking(at: .immediate)
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: language.speechCode)
+        utterance.voice = language.voice
         speaker.speak(utterance)
     }
 
@@ -306,52 +310,149 @@ struct TranslatorView: View {
     }
 }
 
+// MARK: - Language picker
+
+enum LanguageSide: Identifiable {
+    case source, target
+    var id: Self { self }
+}
+
+extension AppLanguage {
+    /// iOS voice for reading aloud, or nil when the phone has none for this language.
+    var voice: AVSpeechSynthesisVoice? {
+        AVSpeechSynthesisVoice(language: speechCode) ?? AVSpeechSynthesisVoice(language: rawValue)
+    }
+}
+
+/// One language row: flag, name, the name in that language, and whatever goes on the right.
+struct LanguageRow<Accessory: View>: View {
+    let language: AppLanguage
+    @ViewBuilder var accessory: Accessory
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(language.flag).font(.title2)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(language.name).foregroundStyle(.primary)
+                if language.nativeName != language.name {
+                    Text(language.nativeName).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            accessory
+        }
+        .contentShape(.rect)
+    }
+}
+
+/// Searchable list of every language, downloaded ones first.
+struct LanguagePickerSheet: View {
+    let selected: AppLanguage
+    let engine: TranslationEngine
+    let onPick: (AppLanguage) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var search = ""
+
+    private var matches: [AppLanguage] {
+        search.isEmpty ? AppLanguage.allCases : AppLanguage.allCases.filter {
+            $0.name.localizedCaseInsensitiveContains(search) || $0.nativeName.localizedCaseInsensitiveContains(search)
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                let onPhone = matches.filter { engine.downloaded.contains($0) }
+                if !onPhone.isEmpty {
+                    Section("On This iPhone") { ForEach(onPhone) { row($0) } }
+                }
+                Section {
+                    ForEach(matches.filter { !engine.downloaded.contains($0) }) { row($0) }
+                } header: {
+                    Text("All Languages")
+                } footer: {
+                    Text("These download the first time you translate with them (about 30 MB each).")
+                }
+            }
+            .overlay { if matches.isEmpty { ContentUnavailableView.search(text: search) } }
+            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search languages")
+            .navigationTitle("Language")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { Button(role: .close) { dismiss() } }
+            }
+            .onAppear { engine.refresh() }
+        }
+    }
+
+    private func row(_ language: AppLanguage) -> some View {
+        Button {
+            onPick(language)
+            dismiss()
+        } label: {
+            LanguageRow(language: language) {
+                if language == selected {
+                    Image(systemName: "checkmark").foregroundStyle(Color.accentColor).fontWeight(.semibold)
+                }
+            }
+        }
+        // Black names, not the blue a List gives button labels.
+        .tint(.primary)
+        .accessibilityAddTraits(language == selected ? .isSelected : [])
+    }
+}
+
 // MARK: - Offline languages
 
 struct LanguagesSheet: View {
     let engine: TranslationEngine
     @Environment(\.dismiss) private var dismiss
     @State private var errorText: String?
+    @State private var search = ""
+
+    private var matches: [AppLanguage] {
+        search.isEmpty ? AppLanguage.allCases : AppLanguage.allCases.filter {
+            $0.name.localizedCaseInsensitiveContains(search) || $0.nativeName.localizedCaseInsensitiveContains(search)
+        }
+    }
 
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    ForEach(AppLanguage.allCases) { language in
-                        HStack(spacing: 12) {
-                            Text(language.flag).font(.title2)
-                            Text(language.name)
-                            Spacer()
-                            status(language)
-                        }
-                        .swipeActions {
-                            if engine.downloaded.contains(language) && language != .english {
-                                Button("Delete", systemImage: "trash", role: .destructive) {
-                                    Task { await engine.delete(language) }
-                                }
-                            }
-                        }
-                    }
-                } footer: {
-                    Text("Each language is about 30 MB. Download once on Wi-Fi, then translation works with no internet. Swipe to remove a language.")
-                }
-
-                if AppLanguage.allCases.contains(where: { !engine.downloaded.contains($0) }) {
-                    Section {
-                        Button("Download All", systemImage: "arrow.down.circle.fill") {
-                            Task {
-                                for language in AppLanguage.allCases where !engine.downloaded.contains(language) {
-                                    await download(language)
-                                }
-                            }
-                        }
-                    }
-                }
-
                 if let errorText {
                     Section { Text(errorText).foregroundStyle(.red) }
                 }
+                let onPhone = matches.filter { engine.downloaded.contains($0) }
+                if !onPhone.isEmpty {
+                    Section {
+                        ForEach(onPhone) { language in
+                            LanguageRow(language: language) { status(language) }
+                                .swipeActions {
+                                    if language != .english {
+                                        Button("Delete", systemImage: "trash", role: .destructive) {
+                                            Task { await engine.delete(language) }
+                                        }
+                                    }
+                                }
+                        }
+                    } header: {
+                        Text("On This iPhone")
+                    } footer: {
+                        Text("These work with no internet. Swipe left to remove one.")
+                    }
+                }
+                Section {
+                    ForEach(matches.filter { !engine.downloaded.contains($0) }) { language in
+                        LanguageRow(language: language) { status(language) }
+                    }
+                } header: {
+                    Text("Available")
+                } footer: {
+                    Text("Each language is about 30 MB. Download on Wi-Fi before training, then translate anywhere.")
+                }
             }
+            .overlay { if matches.isEmpty { ContentUnavailableView.search(text: search) } }
+            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search languages")
             .navigationTitle("Offline Languages")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -370,7 +471,7 @@ struct LanguagesSheet: View {
         } else if engine.downloading.contains(language) {
             ProgressView()
         } else if engine.downloaded.contains(language) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.accentColor)
                 .accessibilityLabel("Downloaded")
         } else {
             Button("Download \(language.name)", systemImage: "arrow.down.circle") {
@@ -378,6 +479,7 @@ struct LanguagesSheet: View {
             }
             .labelStyle(.iconOnly)
             .font(.title3)
+            .buttonStyle(.borderless)
         }
     }
 
@@ -405,6 +507,7 @@ private struct ProfileIcon: View {
                 // Same visual size as the SF Symbols next to it (calendar icon).
                 .frame(width: 24, height: 24)
                 .clipShape(.circle)
+                .overlay { Circle().strokeBorder(.tint, lineWidth: 1.5) }
         } else {
             Image(systemName: "person.crop.circle")
         }

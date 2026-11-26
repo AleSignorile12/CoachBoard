@@ -8,8 +8,6 @@ struct CelebrationOverlay: View {
     let onFinish: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var start = Date.now
-    @State private var particles = (0..<90).map { _ in Particle() }
     @State private var showPill = false
 
     private static let duration = 3.6
@@ -17,18 +15,8 @@ struct CelebrationOverlay: View {
     var body: some View {
         ZStack(alignment: .top) {
             if !reduceMotion {
-                TimelineView(.animation) { timeline in
-                    let time = timeline.date.timeIntervalSince(start)
-                    Canvas { context, size in
-                        guard let party = context.resolveSymbol(id: 0) else { return }
-                        for particle in particles {
-                            particle.draw(in: context, size: size, time: time, emoji: party)
-                        }
-                    } symbols: {
-                        Text("🎉").font(.system(size: 30)).tag(0)
-                    }
-                }
-                .ignoresSafeArea()
+                ConfettiBurst()
+                    .ignoresSafeArea()
             }
 
             if showPill {
@@ -58,7 +46,36 @@ struct CelebrationOverlay: View {
 
     private var message: String {
         let list = names.formatted(.list(type: .and))
-        return "🎂 Today is \(list)'s birthday!"
+        return String(localized: "🎂 Today is \(list)'s birthday!")
+    }
+}
+
+/// Confetti and an emoji shooting up from the bottom, then falling and fading (about 3 seconds).
+/// Doesn't take touches. Callers skip it under Reduce Motion.
+struct ConfettiBurst: View {
+    var emoji = "🎉"
+    var count = 90
+    @State private var start = Date.now
+    @State private var particles: [Particle] = []
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let time = timeline.date.timeIntervalSince(start)
+            Canvas { context, size in
+                guard let symbol = context.resolveSymbol(id: 0) else { return }
+                for particle in particles {
+                    particle.draw(in: context, size: size, time: time, emoji: symbol)
+                }
+            } symbols: {
+                Text(emoji).font(.system(size: 30)).tag(0)
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .onAppear {
+            start = .now
+            particles = (0..<count).map { _ in Particle() }
+        }
     }
 }
 

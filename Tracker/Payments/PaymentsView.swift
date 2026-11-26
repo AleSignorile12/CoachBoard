@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import QuickLook
 
 struct PaymentsView: View {
     @Environment(\.modelContext) private var context
@@ -7,6 +8,8 @@ struct PaymentsView: View {
     @State private var month = Month.key(.now)
     @State private var showAdd = false
     @State private var showMonthPicker = false
+    @State private var reportURL: URL?
+    @AppStorage(ReportLanguage.storageKey) private var reportLanguage = ReportLanguage.automatic
 
     /// Like checked items in Notes: still to pay on top, paid at the bottom, each group A–Z.
     private var monthEntries: [PaymentEntry] {
@@ -40,7 +43,7 @@ struct PaymentsView: View {
                     } header: {
                         Text("\(monthEntries.filter(\.paid).count) of \(monthEntries.count) paid")
                     } footer: {
-                        Text("Tap the circle to mark as paid. Tap the fee to switch between standard (30 €) and reduced (25 €) for siblings or friends. Tap Registration when a kid pays the 30 € registration, once per season (\(Month.seasonTitle(Month.season(month))), September to August): a green seal with the paid month then appears under the fee. Tap it in the month it was paid to undo it. Swipe to remove a kid from this month.")
+                        Text("Tap the circle to mark as paid. Tap the fee to switch between standard (30 €) and reduced (25 €) for siblings or friends. Tap Registration when a kid pays the 30 € registration, once per season (\(Month.seasonTitle(Month.season(month))), September to August): a seal with the paid month then appears under the fee. Tap it in the month it was paid to undo it. Swipe to remove a kid from this month.")
                     }
                 }
             }
@@ -48,12 +51,36 @@ struct PaymentsView: View {
                 if monthEntries.isEmpty { emptyState }
             }
             .safeAreaInset(edge: .bottom) { monthSwitcher }
+            .ambientBackground()
             .navigationTitle("Payments")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        Section("Report as PDF") {
+                            Button(Month.title(month), systemImage: "calendar") {
+                                reportURL = Report.month(month).makePDF(context: context, language: reportLanguage)
+                            }
+                            Button("Season \(Month.seasonTitle(Month.season(month)))", systemImage: "calendar.badge.clock") {
+                                reportURL = Report.season(Month.season(month)).makePDF(context: context, language: reportLanguage)
+                            }
+                        }
+                        Picker(selection: $reportLanguage) {
+                            ForEach(ReportLanguage.allCases) { Text(verbatim: $0.name).tag($0) }
+                        } label: {
+                            Label("Report Language", systemImage: "globe")
+                        }
+                        .pickerStyle(.menu)
+                    } label: {
+                        Label("Report", systemImage: "doc.text")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add Kids", systemImage: "person.badge.plus") { showAdd = true }
+                        .popButton()
                 }
             }
+            // Quick Look shows the PDF with the system share button (Mail, WhatsApp, Files, print…).
+            .quickLookPreview($reportURL)
             .sheet(isPresented: $showAdd) {
                 AddToMonthSheet(month: month, existing: Set(monthEntries.compactMap { $0.kid?.persistentModelID }))
             }
@@ -86,16 +113,16 @@ struct PaymentsView: View {
     private var summary: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                stat("Collected", collected, .green)
+                stat("Collected", collected, .accentColor)
                 Spacer()
                 stat("Missing", total - collected, total == collected ? .secondary : .orange)
                 Spacer()
                 stat("Total", total, .primary)
             }
             ProgressView(value: Double(collected), total: Double(max(total, 1)))
-                .tint(.green)
+                .tint(Color.accentColor)
             if registrations > 0 {
-                Label("Includes \(registrations) registration\(registrations == 1 ? "" : "s") (\(registrations * Fee.registration) €)",
+                Label("Registrations included: \(registrations) (\(registrations * Fee.registration) €)",
                       systemImage: "signature")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -104,7 +131,7 @@ struct PaymentsView: View {
         .padding(.vertical, 4)
     }
 
-    private func stat(_ title: String, _ euros: Int, _ color: Color) -> some View {
+    private func stat(_ title: LocalizedStringKey, _ euros: Int, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.caption).foregroundStyle(.secondary)
             Text(euros, format: .currency(code: "EUR").precision(.fractionLength(0)))
@@ -144,7 +171,7 @@ struct PaymentsView: View {
                         Image(systemName: "chevron.up.chevron.down").font(.caption.weight(.semibold))
                     }
                     .font(.headline)
-                    .foregroundStyle(fullyPaidMonths.contains(month) ? AnyShapeStyle(.green) : AnyShapeStyle(.primary))
+                    .foregroundStyle(fullyPaidMonths.contains(month) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
                     .frame(minWidth: 160)
                 }
                 .accessibilityHint("Choose a month")
@@ -183,7 +210,7 @@ private struct PaymentRow: View {
                 } label: {
                     Image(systemName: entry.paid ? "checkmark.circle.fill" : "circle")
                         .font(.title)
-                        .foregroundStyle(entry.paid ? AnyShapeStyle(.green) : AnyShapeStyle(.tertiary))
+                        .foregroundStyle(entry.paid ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                         .contentTransition(.symbolEffect(.replace))
                 }
                 .buttonStyle(.plain)
@@ -224,12 +251,12 @@ private struct PaymentRow: View {
                     Text(entry.fee.amount, format: .currency(code: "EUR").precision(.fractionLength(0)))
                         .font(.body.weight(.semibold))
                         .monospacedDigit()
-                        .foregroundStyle(entry.paid ? .green : .primary)
+                        .foregroundStyle(entry.paid ? .accentColor : .primary)
                     if entry.registrationPaid {
                         Text("+\(Fee.registration) €")
                             .font(.caption.weight(.semibold))
                             .monospacedDigit()
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.accentColor)
                     }
                 }
             }
@@ -237,7 +264,7 @@ private struct PaymentRow: View {
                 Button(entry.paid ? "Not Paid" : "Paid", systemImage: entry.paid ? "xmark" : "checkmark") {
                     withAnimation(.snappy) { entry.paid.toggle() }
                 }
-                .tint(entry.paid ? .gray : .green)
+                .tint(entry.paid ? .gray : .accentColor)
             }
             .swipeActions(edge: .trailing) {
                 Button("Remove", systemImage: "person.badge.minus", role: .destructive) {
@@ -258,7 +285,7 @@ private struct PaymentRow: View {
                 Text(Month.shortTitle(paid.month))
             }
             .font(.caption.weight(.semibold))
-            .foregroundStyle(.green)
+            .foregroundStyle(Color.accentColor)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Registration \(Month.seasonTitle(season)) paid in \(Month.title(paid.month))")
 
@@ -310,12 +337,12 @@ private struct MonthPickerSheet: View {
 
     private func foreground(_ key: Int) -> AnyShapeStyle {
         if key == month { return AnyShapeStyle(.white) }
-        return fullyPaid.contains(key) ? AnyShapeStyle(.green) : AnyShapeStyle(.primary)
+        return fullyPaid.contains(key) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary)
     }
 
     private func background(_ key: Int) -> AnyShapeStyle {
-        if key == month { return fullyPaid.contains(key) ? AnyShapeStyle(.green) : AnyShapeStyle(.tint) }
-        return fullyPaid.contains(key) ? AnyShapeStyle(.green.opacity(0.18)) : AnyShapeStyle(.fill.tertiary)
+        if key == month { return fullyPaid.contains(key) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tint) }
+        return fullyPaid.contains(key) ? AnyShapeStyle(Color.accentColor.opacity(0.18)) : AnyShapeStyle(.fill.tertiary)
     }
 
     var body: some View {
@@ -363,11 +390,11 @@ private struct MonthPickerSheet: View {
                     }
                 }
                 Label {
-                    Text("Green = everyone paid the monthly fee").foregroundStyle(.secondary)
+                    Text("Blue = everyone paid the monthly fee").foregroundStyle(.secondary)
                 } icon: {
                     Image(systemName: "checkmark.circle.fill")
                         .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, .green)
+                        .foregroundStyle(.white, Color.accentColor)
                 }
                 .font(.footnote)
                 Spacer(minLength: 0)

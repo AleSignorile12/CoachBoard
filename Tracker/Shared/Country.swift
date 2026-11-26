@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum Country {
+nonisolated enum Country {
     /// Two-letter ISO country codes, sorted by localized name.
     static let codes: [String] = Locale.Region.isoRegions
         .map(\.identifier)

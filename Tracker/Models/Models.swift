@@ -21,17 +21,18 @@ final class Kid {
     /// Kept so older saved data still loads; `PaymentsView` moves any value over once.
     var registrationMonth: Int? = nil
 
+    // Optional because iCloud sync (CloudKit) requires every relationship to be optional.
     @Relationship(deleteRule: .cascade, inverse: \StoredFile.kid)
-    var files: [StoredFile] = []
+    var files: [StoredFile]? = []
 
     @Relationship(deleteRule: .cascade, inverse: \PaymentEntry.kid)
-    var payments: [PaymentEntry] = []
+    var payments: [PaymentEntry]? = []
 
     init() {}
 
     var fullName: String {
         let name = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
-        return name.isEmpty ? "New Kid" : name
+        return name.isEmpty ? String(localized: "New Kid") : name
     }
 
     var flag: String { Country.flag(countryCode) }
@@ -42,11 +43,11 @@ final class Kid {
     var isBirthdayToday: Bool { !birthDateUnknown && BirthdayReminders.isBirthday(born: birthDate, on: .now) }
 
     var ageText: String {
-        birthDateUnknown ? "Age TBD" : "\(age) years"
+        birthDateUnknown ? String(localized: "Age TBD") : String(localized: "\(age) years")
     }
 
     func file(_ kind: FileKind) -> StoredFile? {
-        files.first { $0.kind == kind }
+        files?.first { $0.kind == kind }
     }
 
     var certificationCount: Int {
@@ -64,12 +65,12 @@ final class Kid {
 
     /// The month entry where this season's registration was paid, if any.
     func registrationEntry(season: Int) -> PaymentEntry? {
-        payments.first { $0.registrationPaid && Month.season($0.month) == season }
+        payments?.first { $0.registrationPaid && Month.season($0.month) == season }
     }
 
     /// Fee used last time this kid was on a month list, so new months start with the right amount.
     var lastFee: Fee {
-        payments.max { $0.month < $1.month }?.fee ?? .standard
+        payments?.max { $0.month < $1.month }?.fee ?? .standard
     }
 }
 
@@ -86,7 +87,7 @@ final class Coach {
     @Attribute(.externalStorage) var photo: Data? = nil
 
     @Relationship(deleteRule: .cascade, inverse: \StoredFile.coach)
-    var files: [StoredFile] = []
+    var files: [StoredFile]? = []
 
     init() {}
 }
@@ -98,12 +99,46 @@ final class PracticeDay {
     /// Day as yyyymmdd, e.g. 20261104.
     var day: Int = 0
     var held: Bool = true
-    /// Why there was no practice (only used when `held` is false).
+    /// Free note for the day: why there was no practice, what was worked on, who came…
     var note: String = ""
+    /// Added in v1.5. False = the day only has a note, no practice / no practice choice yet.
+    var logged: Bool = true
 
     init(day: Int, held: Bool) {
         self.day = day
         self.held = held
+    }
+}
+
+// MARK: - Training days (added in v1.5)
+
+/// Which weekdays the team trains, saved as calendar weekday numbers (Sunday = 1), e.g. "3,5".
+nonisolated enum TrainingDays {
+    static let storageKey = "trainingWeekdays"
+    /// Tuesday and Thursday, the days the app was built around.
+    static let defaultValue = "3,5"
+
+    static func decode(_ raw: String) -> Set<Int> {
+        Set(raw.split(separator: ",").compactMap { Int($0) }.filter { (1...7).contains($0) })
+    }
+
+    static func encode(_ days: Set<Int>) -> String {
+        days.sorted().map(String.init).joined(separator: ",")
+    }
+
+    /// The seven weekdays in the order this phone's week starts (Monday first in Italy).
+    static var weekOrder: [Int] {
+        let first = Calendar.current.firstWeekday
+        return (0..<7).map { (first - 1 + $0) % 7 + 1 }
+    }
+
+    static func name(_ weekday: Int) -> String {
+        Calendar.current.standaloneWeekdaySymbols[weekday - 1]
+    }
+
+    /// "Tuesday or Thursday" (or "… and …"), in week order and the phone's language.
+    static func list(_ days: Set<Int>, type: ListFormatStyle<StringStyle, [String]>.ListType = .or) -> String {
+        weekOrder.filter(days.contains).map(name).formatted(.list(type: type))
     }
 }
 
@@ -116,11 +151,11 @@ enum FileKind: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .idCopy: "ID Copy"
-        case .medicalCertificate: "Medical Certificate"
-        case .registrationForm: "Registration Form"
-        case .coachID: "ID Document"
-        case .other: "File"
+        case .idCopy: String(localized: "ID Copy")
+        case .medicalCertificate: String(localized: "Medical Certificate")
+        case .registrationForm: String(localized: "Registration Form")
+        case .coachID: String(localized: "ID Document")
+        case .other: String(localized: "File")
         }
     }
 
@@ -179,9 +214,9 @@ enum Fee: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .standard: "Standard"
-        case .sibling: "With sibling"
-        case .friend: "With friend"
+        case .standard: String(localized: "Standard")
+        case .sibling: String(localized: "With sibling")
+        case .friend: String(localized: "With friend")
         }
     }
 
@@ -222,10 +257,10 @@ enum KidSort: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .name: "Name"
-        case .age: "Age"
-        case .nationality: "Nationality"
-        case .newest: "Newest Added"
+        case .name: String(localized: "Name")
+        case .age: String(localized: "Age")
+        case .nationality: String(localized: "Nationality")
+        case .newest: String(localized: "Newest Added")
         }
     }
 
@@ -303,5 +338,8 @@ enum SelfCheck {
         assert(Month.season(202609) == 2026 && Month.season(202706) == 2026 && Month.season(202608) == 2025)
         assert(Month.seasonTitle(2026) == "2026/27" && Month.seasonTitle(2099) == "2099/00")
         assert(Country.flag("it") == "🇮🇹")
+        assert(TrainingDays.decode("3,5") == [3, 5] && TrainingDays.decode("") == [] && TrainingDays.decode("9,x,2") == [2])
+        assert(TrainingDays.encode([5, 3]) == "3,5")
+        assert(AppLanguage.allCases.count == 59 && AppLanguage.italian.flag == "🇮🇹")
     }
 }

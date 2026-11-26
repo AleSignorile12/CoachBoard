@@ -36,12 +36,13 @@ private struct CoachForm: View {
     @State private var picker = DocumentPicker()
     @State private var photoItem: PhotosPickerItem?
     @State private var showPhoto = false
+    @State private var showTour = false
     @Namespace private var photoZoom
 
-    private var idFile: StoredFile? { coach.files.first { $0.kind == .coachID } }
+    private var idFile: StoredFile? { coach.files?.first { $0.kind == .coachID } }
 
     private var otherFiles: [StoredFile] {
-        coach.files.filter { $0.kind == .other }.sorted { $0.addedAt < $1.addedAt }
+        (coach.files ?? []).filter { $0.kind == .other }.sorted { $0.addedAt < $1.addedAt }
     }
 
     var body: some View {
@@ -110,6 +111,27 @@ private struct CoachForm: View {
                 }
             }
 
+            Section {
+                AppLanguageRow()
+                Button("Welcome Tour", systemImage: "sparkles") { showTour = true }
+            } header: {
+                Text("App")
+            } footer: {
+                Text("Tracker uses your iPhone's language. To pick a different one just for Tracker, choose Language in Settings.")
+            }
+
+            Section {
+                ICloudStatusRow()
+            } footer: {
+                Text("Kids, payments, files and the practice log are saved in your iCloud and stay in sync on your devices, even if you delete the app.")
+            }
+
+            Section {
+                AppLockRow()
+            } footer: {
+                Text("Tracker asks for Face ID or your passcode every time you open it, and stays hidden in the app switcher.")
+            }
+
             Section("ID") {
                 DocumentSlotRow(kind: .coachID, file: idFile, picker: picker) {
                     if let idFile { context.delete(idFile) }
@@ -124,8 +146,11 @@ private struct CoachForm: View {
             } header: {
                 Text("Other Files")
             } footer: {
-                Text("Swipe a file to rename or delete it. Files are stored only on this iPhone.")
+                Text("Swipe a file to rename or delete it.")
             }
+        }
+        .sheet(isPresented: $showTour) {
+            OnboardingView(isReplay: true) { showTour = false }
         }
         .documentPicker(picker) { kind, name, data in
             context.storeFile(kind, name: name, data: data, coach: coach)
@@ -135,7 +160,7 @@ private struct CoachForm: View {
             Task {
                 defer { photoItem = nil }
                 guard let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else {
-                    picker.error = "This photo couldn't be loaded."
+                    picker.error = String(localized: "This photo couldn't be loaded.")
                     return
                 }
                 // 1600 px: sharp full screen, still small to store.
@@ -149,13 +174,17 @@ private struct CoachForm: View {
     private var avatar: some View {
         Group {
             if let data = coach.photo, let image = UIImage(data: data) {
+                // The photo inside a blue ring, with a thin gap between them.
                 Image(uiImage: image).resizable().scaledToFill()
+                    .frame(width: 88, height: 88)
+                    .clipShape(.circle)
+                    .padding(4)
+                    .overlay { Circle().strokeBorder(.tint, lineWidth: 3) }
             } else {
                 Image(systemName: "person.crop.circle.fill").resizable().foregroundStyle(.tint)
             }
         }
         .frame(width: 96, height: 96)
-        .clipShape(.circle)
     }
 }
 

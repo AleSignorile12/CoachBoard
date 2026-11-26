@@ -32,12 +32,13 @@ struct KidsView: View {
             .overlay {
                 if kids.isEmpty {
                     ContentUnavailableView {
-                        Label("No Kids Yet", systemImage: "person.3")
+                        Label("Your Team Starts Here", systemImage: "figure.run")
+                            .symbolEffect(.bounce, options: .repeat(2))
                     } description: {
-                        Text("Add the kids you coach to get started.")
+                        Text("Add the first kid. Payments, documents and birthdays follow from there.")
                     } actions: {
                         Button("Add Kid", systemImage: "plus", action: add)
-                            .buttonStyle(.glassProminent)
+                            .popButton()
                     }
                 } else if results.isEmpty {
                     if search.isEmpty {
@@ -50,11 +51,13 @@ struct KidsView: View {
             .searchable(text: $search, prompt: "Name or country")
             .sensoryFeedback(.selection, trigger: sort)
             .sensoryFeedback(.selection, trigger: nationality)
+            .ambientBackground()
             .navigationTitle("Kids")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { sortMenu }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add Kid", systemImage: "plus", action: add)
+                        .popButton()
                 }
             }
             .sheet(item: $selected) { KidProfileSheet(kid: $0, isNew: false) }
@@ -127,7 +130,7 @@ struct FlagBadge: View {
         Text(Country.flag(code))
             .font(.system(size: size * 0.6))
             .frame(width: size, height: size)
-            .background(.fill.tertiary, in: .circle)
+            .background(Country.tint(code), in: .circle)
             .accessibilityLabel(Country.name(code))
     }
 }
@@ -144,7 +147,7 @@ struct KidProfileSheet: View {
     @State private var deleteOnClose = false
 
     private var otherFiles: [StoredFile] {
-        kid.files.filter { $0.kind == .other }.sorted { $0.addedAt < $1.addedAt }
+        (kid.files ?? []).filter { $0.kind == .other }.sorted { $0.addedAt < $1.addedAt }
     }
 
     var body: some View {

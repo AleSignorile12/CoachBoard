@@ -16,7 +16,7 @@ struct CertificationsView: View {
                             Text("\(completeCount) of \(kids.count) kids complete")
                                 .font(.headline)
                             ProgressView(value: Double(completeCount), total: Double(kids.count))
-                                .tint(.green)
+                                .tint(Color.accentColor)
                         }
                         .padding(.vertical, 4)
                     }
@@ -30,10 +30,11 @@ struct CertificationsView: View {
             }
             .overlay {
                 if kids.isEmpty {
-                    ContentUnavailableView("No Kids Yet", systemImage: "checkmark.seal",
-                                           description: Text("Add kids in the Kids tab first."))
+                    ContentUnavailableView("Nothing to Check Yet", systemImage: "checkmark.seal",
+                                           description: Text("Add kids in the Kids tab and their documents show up here."))
                 }
             }
+            .ambientBackground()
             .navigationTitle("Certifications")
             .sheet(item: $selected) { CertificationSheet(kid: $0) }
         }
@@ -43,6 +44,13 @@ struct CertificationsView: View {
 private struct CertificationRow: View {
     let kid: Kid
 
+    /// Light blue with one document, deepening to the app's blue when all are in.
+    private var ringColor: Color {
+        let done = Double(kid.certificationCount) / Double(FileKind.certifications.count)
+        let start = Color(red: 0.62, green: 0.80, blue: 0.98)
+        return start.mix(with: .accentColor, by: (done - 1 / 3) * 1.5)
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             // Flag inside a ring that fills as documents arrive.
@@ -50,7 +58,7 @@ private struct CertificationRow: View {
                 Circle().stroke(.fill.tertiary, lineWidth: 4)
                 Circle()
                     .trim(from: 0, to: CGFloat(kid.certificationCount) / CGFloat(FileKind.certifications.count))
-                    .stroke(kid.certificationsComplete ? Color.green : Color.orange, style: .init(lineWidth: 4, lineCap: .round))
+                    .stroke(ringColor, style: .init(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text(kid.flag).font(.title2)
             }
@@ -62,7 +70,7 @@ private struct CertificationRow: View {
                     ForEach(FileKind.certifications, id: \.self) { kind in
                         Image(systemName: kind.icon)
                             .font(.caption)
-                            .foregroundStyle(kid.file(kind) == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.green))
+                            .foregroundStyle(kid.file(kind) == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.accentColor))
                             .accessibilityLabel("\(kind.title): \(kid.file(kind) == nil ? "missing" : "received")")
                     }
                 }
@@ -73,7 +81,7 @@ private struct CertificationRow: View {
             if kid.certificationsComplete {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.title2)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.accentColor)
                     .accessibilityLabel("All documents received")
             } else {
                 Text("\(kid.certificationCount)/\(FileKind.certifications.count)")
@@ -91,7 +99,9 @@ private struct CertificationSheet: View {
     let kid: Kid
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var picker = DocumentPicker()
+    @State private var party = false
 
     var body: some View {
         NavigationStack {
@@ -107,7 +117,7 @@ private struct CertificationSheet: View {
                 } footer: {
                     if kid.certificationsComplete {
                         Label("Everything received.", systemImage: "checkmark.seal.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.accentColor)
                     } else {
                         Text("\(FileKind.certifications.count - kid.certificationCount) still missing.")
                     }
@@ -126,5 +136,17 @@ private struct CertificationSheet: View {
         }
         .presentationDetents([.medium, .large])
         .sensoryFeedback(.success, trigger: kid.certificationsComplete) { _, complete in complete }
+        // The last missing document just arrived: a short burst of ✅.
+        .overlay {
+            if party && !reduceMotion { ConfettiBurst(emoji: "✅", count: 60).ignoresSafeArea() }
+        }
+        .onChange(of: kid.certificationsComplete) { _, complete in
+            if complete { party = true }
+        }
+        .task(id: party) {
+            guard party else { return }
+            try? await Task.sleep(for: .seconds(3.5))
+            party = false
+        }
     }
 }

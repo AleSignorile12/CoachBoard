@@ -48,16 +48,27 @@ final class DocumentPicker {
         }
     }
 
+    /// Quick Look needs a real file, so this writes a temporary copy; `discardPreview` deletes it when the preview closes.
     func open(_ file: StoredFile) {
         do {
             let folder = URL.temporaryDirectory.appending(path: UUID().uuidString)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let url = folder.appending(path: file.name)
-            try file.data.write(to: url)
+            try file.data.write(to: url, options: .completeFileProtection)
             preview = url
         } catch {
             self.error = error.localizedDescription
         }
+    }
+
+    /// Deletes the temporary copy made by `open` (ID copies and medical certificates shouldn't linger on disk).
+    func discardPreview(_ url: URL) {
+        // Only ever the UUID folder `open` created directly inside the temporary directory.
+        let folder = url.deletingLastPathComponent()
+        guard UUID(uuidString: folder.lastPathComponent) != nil,
+              folder.deletingLastPathComponent().standardizedFileURL.path() == URL.temporaryDirectory.standardizedFileURL.path()
+        else { return }
+        try? FileManager.default.removeItem(at: folder)
     }
 }
 
@@ -110,6 +121,9 @@ private struct DocumentPickerModifier: ViewModifier {
                 .ignoresSafeArea()
             }
             .quickLookPreview($picker.preview)
+            .onChange(of: picker.preview) { old, new in
+                if let old, old != new { picker.discardPreview(old) }
+            }
             .alert("Couldn't open file", isPresented: Binding { picker.error != nil } set: { if !$0 { picker.error = nil } }) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -162,7 +176,7 @@ struct DocumentSlotRow: View {
                 HStack(spacing: 12) {
                     Image(systemName: file == nil ? kind.icon : "checkmark.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(file == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.green))
+                        .foregroundStyle(file == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
                         .frame(width: 32)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(kind.title).foregroundStyle(.primary)
@@ -187,7 +201,7 @@ struct DocumentAddMenu: View {
     let kind: FileKind
     let picker: DocumentPicker
     var replacing = false
-    var title: String?
+    var title: LocalizedStringKey?
     var onDelete: (() -> Void)?
 
     var body: some View {
