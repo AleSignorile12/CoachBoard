@@ -24,7 +24,7 @@
 - **Language:** Swift with SwiftUI, SwiftData and CloudKit. One dependency: Google ML Kit for offline translation, through CocoaPods.
 - **App languages:** English, Italian, Croatian, Spanish, French, German and Portuguese
 - **Privacy:** the data lives on the iPhone and in the coach's own private iCloud. Translation runs on the device.
-- **Status:** on TestFlight as **CoachBoard**, since the name Tracker was taken on the App Store (see [Status](#status-what-is-verified-and-what-isnt)).
+- **Status:** on TestFlight as **CoachBoard** (see [Status](#status-what-is-verified-and-what-isnt)).
 
 ---
 
