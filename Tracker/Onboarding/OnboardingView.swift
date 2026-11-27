@@ -129,7 +129,7 @@ struct OnboardingView: View {
                     .frame(width: 88, height: 88)
                     .clipShape(.rect(cornerRadius: 20, style: .continuous))
                     .accessibilityHidden(true)
-                Text("Welcome to Tracker")
+                Text("Welcome to CoachBoard")
                     .font(.largeTitle.bold())
                     .multilineTextAlignment(.center)
             }
@@ -166,6 +166,9 @@ struct OnboardingView: View {
             StepHeader(symbol: "calendar", title: "When do you train?",
                        text: "Only these days can be marked in the practice calendar. You can change them there anytime.")
             VStack(spacing: 12) {
+                SportPicker(standalone: true)
+                    .padding(.bottom, 2)
+                Divider()
                 WeekdayPicker(days: trainingDays)
                 Text(trainingDays.wrappedValue.isEmpty ? String(localized: "No days picked yet")
                      : TrainingDays.list(trainingDays.wrappedValue, type: .and))
@@ -200,7 +203,7 @@ struct OnboardingView: View {
                     .font(.headline)
                     .foregroundStyle(Color.accentColor)
             case .denied:
-                Text("Notifications are off for Tracker. You can turn them on in Settings.")
+                Text("Notifications are off for CoachBoard. You can turn them on in Settings.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

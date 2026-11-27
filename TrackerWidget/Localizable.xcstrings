@@ -87,45 +87,85 @@
         }
       }
     },
-    "/ %lld": {
-      "shouldTranslate": false
-    },
-    "Add birth dates in Tracker": {
+    "+%lld": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Füge Geburtsdaten in Tracker hinzu"
+            "value": "+%lld"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añade las fechas de nacimiento en Tracker"
+            "value": "+%lld"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajoutez les dates de naissance dans Tracker"
+            "value": "+%lld"
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dodaj datume rođenja u Trackeru"
+            "value": "+%lld"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aggiungi le date di nascita in Tracker"
+            "value": "+%lld"
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adiciona as datas de nascimento no Tracker"
+            "value": "+%lld"
+          }
+        }
+      }
+    },
+    "/ %lld": {
+      "shouldTranslate": false
+    },
+    "Add birth dates in CoachBoard": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Füge Geburtsdaten in CoachBoard hinzu"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añade las fechas de nacimiento en CoachBoard"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajoutez les dates de naissance dans CoachBoard"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj datume rođenja u CoachBoardu"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi le date di nascita in CoachBoard"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adiciona as datas de nascimento no CoachBoard"
           }
         }
       }
@@ -570,6 +610,46 @@
         }
       }
     },
+    "Still to pay": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch offen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltan por pagar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reste à payer"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Još nisu platili"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devono pagare"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por pagar"
+          }
+        }
+      }
+    },
     "The kids who have a birthday coming up.": {
       "localizations": {
         "de": {
@@ -606,6 +686,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "As crianças que fazem anos em breve."
+          }
+        }
+      }
+    },
+    "Then %@, %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dann %1$@, %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luego %1$@, %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puis %1$@, %2$@"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zatim %1$@, %2$@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poi %1$@, %2$@"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depois %1$@, %2$@"
           }
         }
       }

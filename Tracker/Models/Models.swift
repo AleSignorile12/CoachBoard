@@ -207,10 +207,11 @@ enum Fee: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var amount: Int { self == .standard ? 30 : 25 }
+    /// The amount set in My Profile › Fees, used for new month lists and when the fee is changed.
+    var amount: Int { FeeAmounts.monthly(self) }
 
-    /// Registration fee, paid once per kid per season.
-    static let registration = 30
+    /// Registration fee, paid once per kid per season (as set in My Profile › Fees).
+    static var registration: Int { FeeAmounts.registration }
 
     var title: String {
         switch self {
@@ -229,11 +230,35 @@ enum Fee: String, CaseIterable, Identifiable {
     }
 }
 
+/// The fee amounts the coach chose in My Profile › Fees, in whole euros.
+enum FeeAmounts {
+    static let standardKey = "feeStandard", siblingKey = "feeSibling", friendKey = "feeFriend", registrationKey = "feeRegistration"
+
+    /// The amounts before they could be changed. Payments saved back then have no amount of their own and use these.
+    static let original = (standard: 30, sibling: 25, friend: 25, registration: 30)
+
+    static func monthly(_ fee: Fee) -> Int {
+        switch fee {
+        case .standard: value(standardKey, original.standard)
+        case .sibling: value(siblingKey, original.sibling)
+        case .friend: value(friendKey, original.friend)
+        }
+    }
+
+    static var registration: Int { value(registrationKey, original.registration) }
+
+    private static func value(_ key: String, _ fallback: Int) -> Int {
+        UserDefaults.standard.object(forKey: key) as? Int ?? fallback
+    }
+}
+
 @Model
 final class PaymentEntry {
     /// Month as yyyymm, e.g. 202611.
     var month: Int = 0
     var paid: Bool = false
+    /// The fee type and the amounts it had when set, as "standard|30|30" (type, monthly, registration), so later
+    /// changes in Fees don't rewrite past months. Entries saved before that are just "standard".
     var feeRaw: String = Fee.standard.rawValue
     /// Season registration paid in this month (at most one entry per kid per season).
     var registrationPaid: Bool = false
@@ -241,13 +266,33 @@ final class PaymentEntry {
 
     init(month: Int, fee: Fee) {
         self.month = month
-        self.feeRaw = fee.rawValue
+        self.fee = fee
     }
 
+    private var parts: [Substring] { feeRaw.split(separator: "|") }
+
     var fee: Fee {
-        get { Fee(rawValue: feeRaw) ?? .standard }
-        set { feeRaw = newValue.rawValue }
+        get { parts.first.flatMap { Fee(rawValue: String($0)) } ?? .standard }
+        set { feeRaw = "\(newValue.rawValue)|\(newValue.amount)|\(Fee.registration)" }
     }
+
+    /// The monthly amount for this kid this month.
+    var amount: Int {
+        if parts.count > 1, let value = Int(parts[1]) { return value }
+        return fee == .standard ? FeeAmounts.original.standard : FeeAmounts.original.sibling
+    }
+
+    /// What the season registration costs if it's paid in this month.
+    var registrationAmount: Int {
+        if parts.count > 2, let value = Int(parts[2]) { return value }
+        return FeeAmounts.original.registration
+    }
+
+    /// The registration counted in this month's totals: its amount if paid this month, otherwise 0.
+    var registrationTotal: Int { registrationPaid ? registrationAmount : 0 }
+
+    /// Takes the amounts currently set in Fees, keeping the fee type.
+    func updateAmounts() { fee = fee }
 }
 
 enum KidSort: String, CaseIterable, Identifiable {
@@ -334,7 +379,11 @@ enum SelfCheck {
         assert(Month.add(1, to: 202612) == 202701)
         assert(Month.add(-13, to: 202611) == 202510)
         assert(Month.key(Month.date(202603)) == 202603)
-        assert(Fee.standard.amount == 30 && Fee.sibling.amount == 25 && Fee.friend.amount == 25)
+        let old = PaymentEntry(month: 202610, fee: .standard)
+        old.feeRaw = "sibling"
+        assert(old.fee == .sibling && old.amount == 25 && old.registrationAmount == 30)
+        old.feeRaw = "friend|28|35"
+        assert(old.fee == .friend && old.amount == 28 && old.registrationAmount == 35)
         assert(Month.season(202609) == 2026 && Month.season(202706) == 2026 && Month.season(202608) == 2025)
         assert(Month.seasonTitle(2026) == "2026/27" && Month.seasonTitle(2099) == "2099/00")
         assert(Country.flag("it") == "🇮🇹")

@@ -54,7 +54,9 @@ struct TranslatorView: View {
                         .listRowInsets(EdgeInsets())
                 }
                 Section { inputCard }
+                    .cardBackground()
                 Section { outputCard }
+                    .cardBackground()
                 savedSection
             }
             .listSectionSpacing(14)
@@ -199,7 +201,7 @@ struct TranslatorView: View {
     }
 
     private var savedSection: some View {
-        Section {
+        let section = Section {
             if saved.isEmpty {
                 Text("Tap the star on a translation to keep it here, ready for training.")
                     .font(.subheadline)
@@ -240,6 +242,7 @@ struct TranslatorView: View {
         } footer: {
             if !saved.isEmpty { Text("Swipe left on a phrase to delete it.") }
         }
+        return section.cardBackground()
     }
 
     // MARK: Actions

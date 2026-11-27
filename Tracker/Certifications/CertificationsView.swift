@@ -20,12 +20,14 @@ struct CertificationsView: View {
                         }
                         .padding(.vertical, 4)
                     }
+                    .cardBackground()
                     Section {
                         ForEach(kids) { kid in
                             Button { selected = kid } label: { CertificationRow(kid: kid) }
                                 .tint(.primary)
                         }
                     }
+                    .cardBackground()
                 }
             }
             .overlay {

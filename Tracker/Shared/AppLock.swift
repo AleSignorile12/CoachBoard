@@ -43,7 +43,7 @@ final class AppLock {
         let context = LAContext()
         context.localizedCancelTitle = String(localized: "Cancel")
         return (try? await context.evaluatePolicy(.deviceOwnerAuthentication,
-                                                  localizedReason: String(localized: "Unlock Tracker to see your team.")))
+                                                  localizedReason: String(localized: "Unlock CoachBoard to see your team.")))
             ?? false
     }
 
@@ -146,7 +146,7 @@ private struct LockScreen: View {
                 .clipShape(.rect(cornerRadius: 20, style: .continuous))
                 .accessibilityHidden(true)
             if model.locked {
-                Label("Tracker Is Locked", systemImage: "lock.fill")
+                Label("CoachBoard Is Locked", systemImage: "lock.fill")
                     .font(.title3.weight(.semibold))
             }
             Spacer()

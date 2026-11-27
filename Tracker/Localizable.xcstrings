@@ -1391,6 +1391,46 @@
         }
       }
     },
+    "Basketball": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basketball"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baloncesto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basket-ball"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Košarka"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basket"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basquetebol"
+          }
+        }
+      }
+    },
     "Birthday this month": {
       "localizations": {
         "de": {
@@ -1987,6 +2027,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "Coach"
+          }
+        }
+      }
+    },
+    "CoachBoard Is Locked": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard ist gesperrt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard está bloqueado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard est verrouillé"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard je zaključan"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard è bloccato"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O CoachBoard está bloqueado"
+          }
+        }
+      }
+    },
+    "CoachBoard asks for Face ID or your passcode every time you open it, and stays hidden in the app switcher.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard fragt bei jedem Öffnen nach Face ID oder deinem Code und bleibt im App-Umschalter verborgen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard pide Face ID o tu código cada vez que lo abres y se oculta en el selector de apps."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard demande Face ID ou votre code à chaque ouverture et reste masqué dans le sélecteur d'apps."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard traži Face ID ili šifru svaki put kad ga otvoriš i ostaje skriven u prebacivaču aplikacija."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard chiede Face ID o il codice ogni volta che lo apri e resta nascosto nel selettore delle app."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O CoachBoard pede o Face ID ou o código sempre que o abres e fica oculto no seletor de apps."
+          }
+        }
+      }
+    },
+    "CoachBoard uses your iPhone's language. To pick a different one just for CoachBoard, choose Language in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard nutzt die Sprache deines iPhone. Für eine andere Sprache nur für CoachBoard wähle in den Einstellungen „Sprache“."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard usa el idioma de tu iPhone. Para elegir otro solo para CoachBoard, ve a Idioma en Ajustes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard utilise la langue de votre iPhone. Pour en choisir une autre juste pour CoachBoard, touchez Langue dans Réglages."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard koristi jezik tvog iPhonea. Za drugi jezik samo za CoachBoard odaberi Jezik u Postavkama."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoachBoard usa la lingua del tuo iPhone. Per sceglierne un'altra solo per CoachBoard, vai su Lingua in Impostazioni."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O CoachBoard usa a língua do teu iPhone. Para escolher outra só para o CoachBoard, vai a Idioma nas Definições."
           }
         }
       }
@@ -3191,6 +3351,46 @@
         }
       }
     },
+    "Fees": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beiträge"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuotas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cotisations"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Članarine"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quote"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mensalidades"
+          }
+        }
+      }
+    },
     "File": {
       "localizations": {
         "de": {
@@ -3311,6 +3511,46 @@
         }
       }
     },
+    "Football": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fußball"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fútbol"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Football"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nogomet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calcio"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Futebol"
+          }
+        }
+      }
+    },
     "From %@": {
       "localizations": {
         "de": {
@@ -3387,6 +3627,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Começar"
+          }
+        }
+      }
+    },
+    "Handball": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Handball"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balonmano"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Handball"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rukomet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pallamano"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andebol"
           }
         }
       }
@@ -4391,6 +4671,46 @@
         }
       }
     },
+    "New amounts count from this month on. Earlier months keep the amounts they had.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Beträge gelten ab diesem Monat. Frühere Monate behalten ihre Beträge."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los nuevos importes cuentan desde este mes. Los meses anteriores mantienen los importes que tenían."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les nouveaux montants s'appliquent à partir de ce mois. Les mois précédents gardent leurs montants."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novi iznosi vrijede od ovog mjeseca nadalje. Raniji mjeseci zadržavaju svoje iznose."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I nuovi importi valgono da questo mese in poi. I mesi precedenti mantengono gli importi che avevano."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os novos valores contam a partir deste mês. Os meses anteriores mantêm os valores que tinham."
+          }
+        }
+      }
+    },
     "Newest Added": {
       "localizations": {
         "de": {
@@ -4507,6 +4827,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ano seguinte"
+          }
+        }
+      }
+    },
+    "No Court": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Spielfeld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin pista"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun terrain"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bez terena"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun campo"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem campo"
           }
         }
       }
@@ -5151,42 +5511,42 @@
         }
       }
     },
-    "Notifications are off for Tracker. You can turn them on in Settings.": {
+    "Notifications are off for CoachBoard. You can turn them on in Settings.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mitteilungen für Tracker sind aus. Du kannst sie in den Einstellungen einschalten."
+            "value": "Mitteilungen für CoachBoard sind aus. Du kannst sie in den Einstellungen einschalten."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las notificaciones de Tracker están desactivadas. Puedes activarlas en Ajustes."
+            "value": "Las notificaciones de CoachBoard están desactivadas. Puedes activarlas en Ajustes."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les notifications de Tracker sont désactivées. Vous pouvez les activer dans Réglages."
+            "value": "Les notifications de CoachBoard sont désactivées. Vous pouvez les activer dans Réglages."
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Obavijesti za Tracker su isključene. Možeš ih uključiti u Postavkama."
+            "value": "Obavijesti za CoachBoard su isključene. Možeš ih uključiti u Postavkama."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le notifiche di Tracker sono disattivate. Puoi attivarle in Impostazioni."
+            "value": "Le notifiche di CoachBoard sono disattivate. Puoi attivarle in Impostazioni."
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
-            "value": "As notificações do Tracker estão desativadas. Podes ativá-las nas Definições."
+            "value": "As notificações do CoachBoard estão desativadas. Podes ativá-las nas Definições."
           }
         }
       }
@@ -5387,6 +5747,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Neste iPhone"
+          }
+        }
+      }
+    },
+    "Once per Season": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einmal pro Saison"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una vez por temporada"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une fois par saison"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jednom po sezoni"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una volta per stagione"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma vez por época"
           }
         }
       }
@@ -5827,6 +6227,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Escolhe pelo menos um dia. No calendário só se podem marcar os dias de treino."
+          }
+        }
+      }
+    },
+    "Pick the fee for each kid in Payments by tapping it under their name.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle den Beitrag jedes Kindes unter Zahlungen, indem du unter seinem Namen darauf tippst."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige la cuota de cada niño en Pagos tocándola debajo de su nombre."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez la cotisation de chaque enfant dans Paiements en la touchant sous son nom."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Članarinu svakog djeteta odaberi u Plaćanjima dodirom ispod njegova imena."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scegli la quota di ogni bambino in Pagamenti toccandola sotto il suo nome."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolhe a mensalidade de cada criança em Pagamentos tocando nela por baixo do nome."
           }
         }
       }
@@ -7591,6 +8031,46 @@
         }
       }
     },
+    "Sport": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sportart"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deporte"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sport"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sport"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sport"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desporto"
+          }
+        }
+      }
+    },
     "Standard": {
       "localizations": {
         "de": {
@@ -7911,42 +8391,42 @@
         }
       }
     },
-    "Tap the circle to mark as paid. Tap the fee to switch between standard (30 €) and reduced (25 €) for siblings or friends. Tap Registration when a kid pays the 30 € registration, once per season (%@, September to August): a seal with the paid month then appears under the fee. Tap it in the month it was paid to undo it. Swipe to remove a kid from this month.": {
+    "Tap the circle to mark as paid. Tap the fee to switch between standard and reduced for siblings or friends. Tap Registration when a kid pays the registration, once per season (%@, September to August): a seal with the paid month then appears under the fee. Tap it in the month it was paid to undo it. Swipe to remove a kid from this month. Set the amounts in My Profile › Fees.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tippe auf den Kreis, um als bezahlt zu markieren. Tippe auf den Beitrag, um zwischen Standard (30 €) und ermäßigt (25 €) für Geschwister oder Freunde zu wechseln. Tippe auf Anmeldung, wenn ein Kind die Anmeldegebühr von 30 € zahlt, einmal pro Saison (%@, September bis August): Unter dem Beitrag erscheint dann ein Siegel mit dem Zahlungsmonat. Tippe es im Zahlungsmonat an, um es rückgängig zu machen. Wische, um ein Kind aus diesem Monat zu entfernen."
+            "value": "Tippe auf den Kreis, um als bezahlt zu markieren. Tippe auf den Beitrag, um zwischen Standard und ermäßigt für Geschwister oder Freunde zu wechseln. Tippe auf Anmeldung, wenn ein Kind die Anmeldegebühr zahlt, einmal pro Saison (%@, September bis August): Unter dem Beitrag erscheint dann ein Siegel mit dem Zahlungsmonat. Tippe es im Zahlungsmonat an, um es rückgängig zu machen. Wische, um ein Kind aus diesem Monat zu entfernen. Die Beträge legst du unter Mein Profil › Beiträge fest."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toca el círculo para marcar como pagado. Toca la cuota para cambiar entre estándar (30 €) y reducida (25 €) para hermanos o amigos. Toca Inscripción cuando un niño pague la inscripción de 30 €, una vez por temporada (%@, de septiembre a agosto): debajo de la cuota aparece un sello con el mes del pago. Tócalo en el mes en que se pagó para deshacerlo. Desliza para quitar a un niño de este mes."
+            "value": "Toca el círculo para marcar como pagado. Toca la cuota para cambiar entre estándar y reducida para hermanos o amigos. Toca Inscripción cuando un niño pague la inscripción, una vez por temporada (%@, de septiembre a agosto): debajo de la cuota aparece un sello con el mes del pago. Tócalo en el mes en que se pagó para deshacerlo. Desliza para quitar a un niño de este mes. Los importes se fijan en Mi perfil › Cuotas."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touchez le cercle pour marquer comme payé. Touchez la cotisation pour passer de standard (30 €) à réduite (25 €) pour les frères et sœurs ou amis. Touchez Inscription quand un enfant paie l'inscription de 30 €, une fois par saison (%@, de septembre à août) : un sceau avec le mois du paiement apparaît sous la cotisation. Touchez-le dans le mois du paiement pour annuler. Balayez pour retirer un enfant de ce mois."
+            "value": "Touchez le cercle pour marquer comme payé. Touchez la cotisation pour passer de standard à réduite pour les frères et sœurs ou amis. Touchez Inscription quand un enfant paie l'inscription, une fois par saison (%@, de septembre à août) : un sceau avec le mois du paiement apparaît sous la cotisation. Touchez-le dans le mois du paiement pour annuler. Balayez pour retirer un enfant de ce mois. Les montants se règlent dans Mon profil › Cotisations."
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dodirni krug da označiš plaćeno. Dodirni članarinu za prebacivanje između standardne (30 €) i snižene (25 €) za braću, sestre ili prijatelje. Dodirni Upisnina kad dijete plati upisninu od 30 €, jednom po sezoni (%@, od rujna do kolovoza): ispod članarine pojavit će se pečat s mjesecom plaćanja. Dodirni ga u mjesecu plaćanja da poništiš. Povuci za uklanjanje djeteta iz ovog mjeseca."
+            "value": "Dodirni krug da označiš plaćeno. Dodirni članarinu za prebacivanje između standardne i snižene za braću, sestre ili prijatelje. Dodirni Upisnina kad dijete plati upisninu, jednom po sezoni (%@, od rujna do kolovoza): ispod članarine pojavit će se pečat s mjesecom plaćanja. Dodirni ga u mjesecu plaćanja da poništiš. Povuci za uklanjanje djeteta iz ovog mjeseca. Iznose postavi u Moj profil › Članarine."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tocca il cerchio per segnare come pagato. Tocca la quota per passare da standard (30 €) a ridotta (25 €) per fratelli o amici. Tocca Iscrizione quando un bambino paga l'iscrizione da 30 €, una volta per stagione (%@, da settembre ad agosto): sotto la quota compare un sigillo con il mese del pagamento. Toccalo nel mese in cui è stata pagata per annullarla. Scorri per togliere un bambino da questo mese."
+            "value": "Tocca il cerchio per segnare come pagato. Tocca la quota per passare da standard a ridotta per fratelli o amici. Tocca Iscrizione quando un bambino paga l'iscrizione, una volta per stagione (%@, da settembre ad agosto): sotto la quota compare un sigillo con il mese del pagamento. Toccalo nel mese in cui è stata pagata per annullarla. Scorri per togliere un bambino da questo mese. Gli importi si impostano in Il mio profilo › Quote."
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toca no círculo para marcar como pago. Toca na mensalidade para alternar entre normal (30 €) e reduzida (25 €) para irmãos ou amigos. Toca em Inscrição quando uma criança pagar a inscrição de 30 €, uma vez por época (%@, de setembro a agosto): aparece um selo com o mês do pagamento por baixo da mensalidade. Toca nele no mês em que foi paga para anular. Desliza para retirar uma criança deste mês."
+            "value": "Toca no círculo para marcar como pago. Toca na mensalidade para alternar entre normal e reduzida para irmãos ou amigos. Toca em Inscrição quando uma criança pagar a inscrição, uma vez por época (%@, de setembro a agosto): aparece um selo com o mês do pagamento por baixo da mensalidade. Toca nele no mês em que foi paga para anular. Desliza para retirar uma criança deste mês. Os valores definem-se em O meu perfil › Mensalidades."
           }
         }
       }
@@ -7987,6 +8467,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Toca na estrela de uma tradução para a guardar aqui, pronta para o treino."
+          }
+        }
+      }
+    },
+    "Tennis": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tennis"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenis"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tennis"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenis"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tennis"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ténis"
           }
         }
       }
@@ -8431,126 +8951,6 @@
         }
       }
     },
-    "Tracker Is Locked": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker ist gesperrt"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker está bloqueado"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker est verrouillé"
-          }
-        },
-        "hr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker je zaključan"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker è bloccato"
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "O Tracker está bloqueado"
-          }
-        }
-      }
-    },
-    "Tracker asks for Face ID or your passcode every time you open it, and stays hidden in the app switcher.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker fragt bei jedem Öffnen nach Face ID oder deinem Code und bleibt im App-Umschalter verborgen."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker pide Face ID o tu código cada vez que lo abres y se oculta en el selector de apps."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker demande Face ID ou votre code à chaque ouverture et reste masqué dans le sélecteur d'apps."
-          }
-        },
-        "hr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker traži Face ID ili šifru svaki put kad ga otvoriš i ostaje skriven u prebacivaču aplikacija."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker chiede Face ID o il codice ogni volta che lo apri e resta nascosto nel selettore delle app."
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "O Tracker pede o Face ID ou o código sempre que o abres e fica oculto no seletor de apps."
-          }
-        }
-      }
-    },
-    "Tracker uses your iPhone's language. To pick a different one just for Tracker, choose Language in Settings.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker nutzt die Sprache deines iPhone. Für eine andere Sprache nur für Tracker wähle in den Einstellungen „Sprache“."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker usa el idioma de tu iPhone. Para elegir otro solo para Tracker, ve a Idioma en Ajustes."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker utilise la langue de votre iPhone. Pour en choisir une autre juste pour Tracker, touchez Langue dans Réglages."
-          }
-        },
-        "hr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker koristi jezik tvog iPhonea. Za drugi jezik samo za Tracker odaberi Jezik u Postavkama."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tracker usa la lingua del tuo iPhone. Per sceglierne un'altra solo per Tracker, vai su Lingua in Impostazioni."
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "O Tracker usa a língua do teu iPhone. Para escolher outra só para o Tracker, vai a Idioma nas Definições."
-          }
-        }
-      }
-    },
     "Training Days": {
       "localizations": {
         "de": {
@@ -8792,42 +9192,42 @@
         }
       }
     },
-    "Unlock Tracker to see your team.": {
+    "Unlock CoachBoard to see your team.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entsperre Tracker, um dein Team zu sehen."
+            "value": "Entsperre CoachBoard, um dein Team zu sehen."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Desbloquea Tracker para ver tu equipo."
+            "value": "Desbloquea CoachBoard para ver tu equipo."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Déverrouillez Tracker pour voir votre équipe."
+            "value": "Déverrouillez CoachBoard pour voir votre équipe."
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Otključaj Tracker da vidiš svoju ekipu."
+            "value": "Otključaj CoachBoard da vidiš svoju ekipu."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sblocca Tracker per vedere la tua squadra."
+            "value": "Sblocca CoachBoard per vedere la tua squadra."
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
-            "value": "Desbloqueia o Tracker para veres a tua equipa."
+            "value": "Desbloqueia o CoachBoard para veres a tua equipa."
           }
         }
       }
@@ -8912,6 +9312,46 @@
         }
       }
     },
+    "Volleyball": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volleyball"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voleibol"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volley-ball"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odbojka"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pallavolo"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voleibol"
+          }
+        }
+      }
+    },
     "Welcome Tour": {
       "localizations": {
         "de": {
@@ -8952,42 +9392,42 @@
         }
       }
     },
-    "Welcome to Tracker": {
+    "Welcome to CoachBoard": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Willkommen bei Tracker"
+            "value": "Willkommen bei CoachBoard"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Te damos la bienvenida a Tracker"
+            "value": "Te damos la bienvenida a CoachBoard"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bienvenue dans Tracker"
+            "value": "Bienvenue dans CoachBoard"
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dobro došli u Tracker"
+            "value": "Dobro došli u CoachBoard"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Benvenuto in Tracker"
+            "value": "Benvenuto in CoachBoard"
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bem-vindo ao Tracker"
+            "value": "Bem-vindo ao CoachBoard"
           }
         }
       }

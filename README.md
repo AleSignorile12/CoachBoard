@@ -47,21 +47,22 @@
 Four tabs:
 
 1. **Translator.** Type a sentence and translate it between any of the 59 languages ML Kit knows, offline once both languages are downloaded. **Read Aloud** speaks it in the right voice, and the star keeps a translation in **Saved Phrases** for the next practice.
-2. **Kids.** Every kid with their flag, age, parents and notes. Sort by name, age, nationality or newest, and filter by nationality. A cake shows next to anyone with a birthday this month.
-3. **Payments.** One list per month: tick who paid. Still to pay stays on top, paid goes to the bottom, each group A–Z. The card at the top shows what's collected, what's missing and the total.
+2. **Kids.** Every kid with their flag, age, parents and notes. Sort by name, age, nationality or newest, filter by nationality, and search by name or country from the field at the bottom. A cake shows next to anyone with a birthday this month.
+3. **Payments.** One list per month: tick who paid. Still to pay stays on top, paid goes to the bottom, each group A–Z. Each kid pays the standard fee or a reduced one (with a sibling or a friend). The card at the top shows what's collected, what's missing and the total.
 4. **Certifications.** Each kid needs a medical certificate, an ID copy and a registration form. A ring shows how many are in, and the top card says how many kids are complete.
 
 Also:
 
 - **Reports.** A PDF of the month (payments and practice log) or of the whole season (every kid, month by month), from the Report menu in Payments. The report can be in English or Italian, whatever language the app is in. Quick Look opens it with the share button, for Mail, WhatsApp, Files or printing.
-- **Widgets.** Next Birthdays, Payments (who paid this month) and Next Practice, on the Home Screen and the Lock Screen.
+- **Widgets.** Next Birthdays, Payments (who paid this month, and who is still to pay) and Next Practice (with the week's training days), in small and medium sizes on the Home Screen and on the Lock Screen.
 - **iCloud sync.** Kids, payments, files and the practice log are saved in the coach's iCloud, so they come back after deleting the app and stay in sync across devices.
 - **Face ID lock.** Optional: CoachBoard asks for Face ID or the passcode every time it opens and stays hidden in the app switcher.
 - **Practice calendar.** Pick the training days, mark each one held or not held, and write a note on any day.
 - **Documents.** Scan a paper with the camera, or import a file. Open any file to preview it.
 - **Birthdays.** Reminders a week before and two days before, then on the day. Opening the app on someone's birthday shoots confetti and shows "Happy birthday".
-- **First launch.** A short whistle animation, then a welcome tour: the coach's name, training days, translator languages and birthday reminders. It can be opened again from the profile.
-- **My profile.** The coach's name, phone, email, picture, ID document and other files.
+- **First launch.** A short whistle animation, then a welcome tour: the coach's name, the sport, training days, translator languages and birthday reminders. It can be opened again from the profile.
+- **Fees.** The amounts for the standard fee, the sibling and friend fees and the registration are set in My Profile › Fees. New amounts count from the current month on; earlier months keep the amounts they had.
+- **My profile.** The coach's name, phone, email, picture, ID document and other files, and the sport (basketball, football, volleyball, handball, tennis or none), which picks the court drawn behind the app.
 
 ---
 
@@ -77,7 +78,7 @@ The same store is mirrored to the coach's private CloudKit database. CloudKit ne
 
 ### Payments and reports (`Tracker/Payments/`)
 
-A month is a list of `PaymentEntry` rows, one per kid on the team that month. An empty month offers the latest earlier list as a template, keeping each kid's last fee. `Report.swift` builds the PDFs from SwiftUI views with `ImageRenderer`, one A4 page at a time, and splits long tables across pages, repeating the header row. Strings and dates are looked up in the report's language, not the app's.
+A month is a list of `PaymentEntry` rows, one per kid on the team that month. An empty month offers the latest earlier list as a template, keeping each kid's last fee. Each row keeps the fee type together with the amounts it had when it was set (`standard|30|30`), so changing the amounts later doesn't rewrite past months, and no new database field was needed. `Report.swift` builds the PDFs from SwiftUI views with `ImageRenderer`, one A4 page at a time, and splits long tables across pages, repeating the header row. Strings and dates are looked up in the report's language, not the app's.
 
 ### Widgets (`TrackerWidget/`, `Tracker/Shared/WidgetData.swift`)
 
@@ -99,10 +100,13 @@ The whistle on the launch screen is drawn in code (`WhistleMark.swift`) from the
 
 ## Fees and seasons
 
-| | Amount |
+The amounts below are the defaults. Each one can be changed in My Profile › Fees.
+
+| | Default |
 | --- | --- |
 | Monthly fee | 30 € |
-| Monthly fee with a sibling or a friend | 25 € |
+| Monthly fee with a sibling | 25 € |
+| Monthly fee with a friend | 25 € |
 | Registration, once per season | 30 € |
 
 A season runs from September to August. A registration paid in any month of the season counts for the whole season.
@@ -112,6 +116,7 @@ A season runs from September to August. A registration paid in any month of the 
 ## Design
 
 - Standard iOS look with Liquid Glass tab and toolbar buttons, in light and dark mode. The app icon has light, dark and tinted versions.
+- A slowly moving blue background with the coach's court drawn in faint lines, at its real proportions. The cards on top are clear Liquid Glass, so the court shows through, slightly bent and softened.
 - Status in words and icons, not colour alone: "3 of 5 paid", "2/3", a check or a ring.
 - Haptics on uploads, on the launch whistle and on the birthday celebration. With Reduce Motion on, the launch shows the still icon and the celebration shows only the pill, without confetti.
 
@@ -130,7 +135,7 @@ A season runs from September to August. A registration paid in any month of the 
 | Area | Frameworks and techniques |
 | --- | --- |
 | Language | Swift, main-actor default isolation with Approachable Concurrency |
-| UI | SwiftUI, `Tab` API, `Canvas` and `TimelineView` for the launch animation, custom confetti |
+| UI | SwiftUI, `Tab` API, `MeshGradient` background, `Canvas` for the courts and the launch animation, Liquid Glass (`UIGlassEffect`) cards, custom confetti |
 | Data | SwiftData with CloudKit sync, cascade relationships and external storage |
 | Widgets | WidgetKit, App Groups |
 | Security | LocalAuthentication (Face ID, Touch ID or passcode) |
@@ -155,10 +160,10 @@ CoachBoard/
 │   ├── Onboarding/           Welcome tour
 │   ├── Translator/           Translator, offline languages, practice calendar, coach profile
 │   ├── Kids/                 Team list and kid profiles
-│   ├── Payments/             Monthly lists, month picker, PDF reports
+│   ├── Payments/             Monthly lists, month picker, fee settings, PDF reports
 │   ├── Certifications/       Documents per kid
 │   ├── Shared/               Documents, countries, birthdays, confetti, Face ID lock,
-│   │                         widget data, launch whistle
+│   │                         widget data, launch whistle, courts, glass cards
 │   ├── Localizable.xcstrings
 │   └── Assets.xcassets
 ├── TrackerWidget/            Birthdays, Payments and Next Practice widgets
@@ -192,7 +197,7 @@ Pick the **Tracker** scheme and run on an iPhone. Signing uses your own team. Th
 
 - The full app builds for iPhone with no warnings and runs on a real iPhone through TestFlight.
 - The app minus the ML Kit pod runs in the iOS simulator. The screenshots come from that build, filled with made-up kids, with iCloud turned off.
-- The launch animation, the Face ID hand-off, the widgets and the reports in both languages were checked in that simulator build.
+- The launch animation, the Face ID hand-off, the widgets, the glass cards, the fee settings and the reports in both languages were checked in that simulator build.
 
 **Not verified yet**
 

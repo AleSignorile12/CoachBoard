@@ -7,6 +7,7 @@ struct KidsView: View {
     @State private var selected: Kid?
     @State private var newKid: Kid?
     @State private var search = ""
+    @FocusState private var searching: Bool
     @AppStorage("kidSort") private var sort: KidSort = .name
     @State private var nationality: String?
 
@@ -28,6 +29,7 @@ struct KidsView: View {
             List(results) { kid in
                 Button { selected = kid } label: { KidRow(kid: kid) }
                     .tint(.primary)
+                    .cardBackground()
             }
             .overlay {
                 if kids.isEmpty {
@@ -48,7 +50,7 @@ struct KidsView: View {
                     }
                 }
             }
-            .searchable(text: $search, prompt: "Name or country")
+            .safeAreaInset(edge: .bottom) { if !kids.isEmpty { searchBar } }
             .sensoryFeedback(.selection, trigger: sort)
             .sensoryFeedback(.selection, trigger: nationality)
             .ambientBackground()
@@ -63,6 +65,33 @@ struct KidsView: View {
             .sheet(item: $selected) { KidProfileSheet(kid: $0, isNew: false) }
             .sheet(item: $newKid) { KidProfileSheet(kid: $0, isNew: true) }
         }
+    }
+
+    /// Search at the bottom, above the tab bar, within reach of the thumb. iOS hides a screen's own bottom toolbar
+    /// while the tab bar shows, so this is a glass field like the month switcher in Payments.
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField("Name or country", text: $search)
+                .focused($searching)
+                .submitLabel(.search)
+                .autocorrectionDisabled()
+            if !search.isEmpty {
+                Button("Clear", systemImage: "xmark.circle.fill") { search = "" }
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(.secondary)
+                    .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 48)
+        .glassEffect(.regular, in: .capsule)
+        .contentShape(.capsule)
+        .onTapGesture { searching = true }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
     }
 
     private var sortMenu: some View {

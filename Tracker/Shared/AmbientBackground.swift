@@ -12,6 +12,8 @@ struct AmbientBackground: View {
             let time = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate
             MeshGradient(width: 3, height: 3, points: points(time), colors: scheme == .dark ? Self.dark : Self.light)
         }
+        // Half of the coach's court in faint lines near the bottom (the sport is picked in the profile).
+        .overlay { CourtLines() }
         .ignoresSafeArea()
         .accessibilityHidden(true)
     }
@@ -29,10 +31,12 @@ struct AmbientBackground: View {
         ]
     }
 
+    // Near-white corners and centre with blue in between (the edges), so it reads blue (like the dark version
+    // reads navy) while keeping light, airy patches.
     private static let light: [Color] = [
-        Color(red: 0.92, green: 0.96, blue: 0.99), Color(red: 0.98, green: 0.99, blue: 1.00), Color(red: 0.93, green: 0.97, blue: 0.99),
-        Color(red: 0.97, green: 0.98, blue: 1.00), Color(red: 0.88, green: 0.94, blue: 0.99), Color(red: 0.98, green: 0.99, blue: 1.00),
-        Color(red: 0.93, green: 0.97, blue: 0.99), Color(red: 0.97, green: 0.98, blue: 1.00), Color(red: 0.91, green: 0.95, blue: 0.99),
+        Color(red: 0.97, green: 0.98, blue: 1.00), Color(red: 0.76, green: 0.85, blue: 0.97), Color(red: 0.96, green: 0.98, blue: 1.00),
+        Color(red: 0.75, green: 0.84, blue: 0.96), Color(red: 0.97, green: 0.98, blue: 1.00), Color(red: 0.77, green: 0.86, blue: 0.97),
+        Color(red: 0.97, green: 0.98, blue: 1.00), Color(red: 0.70, green: 0.81, blue: 0.95), Color(red: 0.96, green: 0.98, blue: 1.00),
     ]
 
     private static let dark: [Color] = [
@@ -43,9 +47,10 @@ struct AmbientBackground: View {
 }
 
 extension View {
-    /// Puts the moving background behind a List or Form, keeping its rows as solid cards on top.
+    /// Puts the moving background behind a List or Form, with the cards in Liquid Glass on top.
     func ambientBackground() -> some View {
         scrollContentBackground(.hidden)
             .background { AmbientBackground() }
+            .background { ListCardCorners() }
     }
 }

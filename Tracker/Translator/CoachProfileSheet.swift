@@ -113,11 +113,17 @@ private struct CoachForm: View {
 
             Section {
                 AppLanguageRow()
+                SportPicker()
+                NavigationLink {
+                    FeeSettingsView()
+                } label: {
+                    Label("Fees", systemImage: "eurosign.circle")
+                }
                 Button("Welcome Tour", systemImage: "sparkles") { showTour = true }
             } header: {
                 Text("App")
             } footer: {
-                Text("Tracker uses your iPhone's language. To pick a different one just for Tracker, choose Language in Settings.")
+                Text("CoachBoard uses your iPhone's language. To pick a different one just for CoachBoard, choose Language in Settings.")
             }
 
             Section {
@@ -129,7 +135,7 @@ private struct CoachForm: View {
             Section {
                 AppLockRow()
             } footer: {
-                Text("Tracker asks for Face ID or your passcode every time you open it, and stays hidden in the app switcher.")
+                Text("CoachBoard asks for Face ID or your passcode every time you open it, and stays hidden in the app switcher.")
             }
 
             Section("ID") {

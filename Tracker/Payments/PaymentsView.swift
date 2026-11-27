@@ -28,9 +28,10 @@ struct PaymentsView: View {
 
     /// Registrations paid this month (already-received money, so it counts in both collected and total).
     private var registrations: Int { monthEntries.filter(\.registrationPaid).count }
-    private var total: Int { monthEntries.reduce(0) { $0 + $1.fee.amount } + registrations * Fee.registration }
+    private var registrationTotal: Int { monthEntries.reduce(0) { $0 + $1.registrationTotal } }
+    private var total: Int { monthEntries.reduce(0) { $0 + $1.amount } + registrationTotal }
     private var collected: Int {
-        monthEntries.filter(\.paid).reduce(0) { $0 + $1.fee.amount } + registrations * Fee.registration
+        monthEntries.filter(\.paid).reduce(0) { $0 + $1.amount } + registrationTotal
     }
 
     var body: some View {
@@ -38,12 +39,13 @@ struct PaymentsView: View {
             List {
                 if !monthEntries.isEmpty {
                     Section { summary }
+                        .cardBackground()
                     Section {
-                        ForEach(monthEntries) { PaymentRow(entry: $0) }
+                        ForEach(monthEntries) { PaymentRow(entry: $0).cardBackground() }
                     } header: {
                         Text("\(monthEntries.filter(\.paid).count) of \(monthEntries.count) paid")
                     } footer: {
-                        Text("Tap the circle to mark as paid. Tap the fee to switch between standard (30 €) and reduced (25 €) for siblings or friends. Tap Registration when a kid pays the 30 € registration, once per season (\(Month.seasonTitle(Month.season(month))), September to August): a seal with the paid month then appears under the fee. Tap it in the month it was paid to undo it. Swipe to remove a kid from this month.")
+                        Text("Tap the circle to mark as paid. Tap the fee to switch between standard and reduced for siblings or friends. Tap Registration when a kid pays the registration, once per season (\(Month.seasonTitle(Month.season(month))), September to August): a seal with the paid month then appears under the fee. Tap it in the month it was paid to undo it. Swipe to remove a kid from this month. Set the amounts in My Profile › Fees.")
                     }
                 }
             }
@@ -122,7 +124,7 @@ struct PaymentsView: View {
             ProgressView(value: Double(collected), total: Double(max(total, 1)))
                 .tint(Color.accentColor)
             if registrations > 0 {
-                Label("Registrations included: \(registrations) (\(registrations * Fee.registration) €)",
+                Label("Registrations included: \(registrations) (\(registrationTotal) €)",
                       systemImage: "signature")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -218,7 +220,7 @@ private struct PaymentRow: View {
                 .sensoryFeedback(.success, trigger: entry.paid) { _, new in new }
                 .sensoryFeedback(.selection, trigger: entry.fee)
 
-                Text(kid.flag).font(.title2)
+                FlagBadge(code: kid.countryCode, size: 36)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(kid.hasBirthday(inMonth: entry.month) ? "\(kid.fullName) 🎂" : kid.fullName)
@@ -248,12 +250,12 @@ private struct PaymentRow: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(entry.fee.amount, format: .currency(code: "EUR").precision(.fractionLength(0)))
+                    Text(entry.amount, format: .currency(code: "EUR").precision(.fractionLength(0)))
                         .font(.body.weight(.semibold))
                         .monospacedDigit()
                         .foregroundStyle(entry.paid ? .accentColor : .primary)
                     if entry.registrationPaid {
-                        Text("+\(Fee.registration) €")
+                        Text("+\(entry.registrationAmount) €")
                             .font(.caption.weight(.semibold))
                             .monospacedDigit()
                             .foregroundStyle(Color.accentColor)
@@ -311,7 +313,7 @@ private struct PaymentRow: View {
             Button {
                 entry.registrationPaid = true
             } label: {
-                Label("Registration \(Fee.registration)\u{00A0}€", systemImage: "plus.circle")
+                Label("Registration \(entry.registrationAmount)\u{00A0}€", systemImage: "plus.circle")
             }
             .buttonStyle(.borderless)
             .sensoryFeedback(.success, trigger: entry.registrationPaid)

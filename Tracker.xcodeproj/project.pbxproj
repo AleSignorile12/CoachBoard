@@ -383,15 +383,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Tracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = V3VQ48386G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TrackerInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tracker;
+				INFOPLIST_KEY_CFBundleDisplayName = CoachBoard;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tracker uses the camera to take pictures of documents like ID copies and medical certificates.";
-				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tracker uses Face ID to keep your team's data private.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "CoachBoard uses Face ID to keep your team's data private.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -419,15 +419,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Tracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = V3VQ48386G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TrackerInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tracker;
+				INFOPLIST_KEY_CFBundleDisplayName = CoachBoard;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tracker uses the camera to take pictures of documents like ID copies and medical certificates.";
-				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tracker uses Face ID to keep your team's data private.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "CoachBoard uses Face ID to keep your team's data private.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -453,11 +453,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = TrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = V3VQ48386G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TrackerWidgetInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tracker;
+				INFOPLIST_KEY_CFBundleDisplayName = CoachBoard;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -481,11 +481,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = TrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = V3VQ48386G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TrackerWidgetInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tracker;
+				INFOPLIST_KEY_CFBundleDisplayName = CoachBoard;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

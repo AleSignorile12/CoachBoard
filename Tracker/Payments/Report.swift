@@ -17,9 +17,9 @@ enum Report: Hashable {
     /// File name without characters iOS won't put in one ("/").
     private var fileName: String {
         switch self {
-        case .month(let key): "Tracker \(monthTitle(key)).pdf"
+        case .month(let key): "CoachBoard \(monthTitle(key)).pdf"
         case .season(let season):
-            "Tracker \(tr("Season \(Month.seasonTitle(season))").replacingOccurrences(of: "/", with: "-")).pdf"
+            "CoachBoard \(tr("Season \(Month.seasonTitle(season))").replacingOccurrences(of: "/", with: "-")).pdf"
         }
     }
 
@@ -62,8 +62,9 @@ enum Report: Hashable {
     private func monthBlocks(_ key: Int, _ data: ReportData) -> [ReportSection] {
         let entries = data.entries(month: key)
         let registrations = entries.filter(\.registrationPaid).count
-        let total = entries.reduce(0) { $0 + $1.fee.amount } + registrations * Fee.registration
-        let collected = entries.filter(\.paid).reduce(0) { $0 + $1.fee.amount } + registrations * Fee.registration
+        let registrationTotal = entries.reduce(0) { $0 + $1.registrationTotal }
+        let total = entries.reduce(0) { $0 + $1.amount } + registrationTotal
+        let collected = entries.filter(\.paid).reduce(0) { $0 + $1.amount } + registrationTotal
         let days = data.practiceDays(month: key)
         let held = days.filter { $0.logged && $0.held }.count
         let missed = days.filter { $0.logged && !$0.held }.count
@@ -95,9 +96,9 @@ enum Report: Hashable {
                     ReportRow(columns: columns, cells: [
                         .text(entry.kid.map { "\($0.flag) \($0.fullName)" } ?? ""),
                         .text(feeTitle(entry.fee)),
-                        .text("\(entry.fee.amount) €"),
+                        .text("\(entry.amount) €"),
                         entry.paid ? .good(tr("Paid")) : .bad(tr("Not paid")),
-                        entry.registrationPaid ? .good("\(Fee.registration) €") : .text("–"),
+                        entry.registrationPaid ? .good("\(entry.registrationAmount) €") : .text("–"),
                     ]).block
                 }
         ))
@@ -132,8 +133,9 @@ enum Report: Hashable {
         let kids = byKid.values.compactMap(\.first?.kid)
             .sorted { $0.fullName.localizedStandardCompare($1.fullName) == .orderedAscending }
         let registrations = entries.filter(\.registrationPaid).count
-        let total = entries.reduce(0) { $0 + $1.fee.amount } + registrations * Fee.registration
-        let collected = entries.filter(\.paid).reduce(0) { $0 + $1.fee.amount } + registrations * Fee.registration
+        let registrationTotal = entries.reduce(0) { $0 + $1.registrationTotal }
+        let total = entries.reduce(0) { $0 + $1.amount } + registrationTotal
+        let collected = entries.filter(\.paid).reduce(0) { $0 + $1.amount } + registrationTotal
         let practice = months.map { key in
             let days = data.practiceDays(month: key)
             return (held: days.filter { $0.logged && $0.held }.count, missed: days.filter { $0.logged && !$0.held }.count)
@@ -157,7 +159,7 @@ enum Report: Hashable {
                .init(tr("Paid"), width: 56, alignment: .trailing)]
         var rows: [ReportBlock] = kids.map { kid in
             let mine = byKid[kid.persistentModelID] ?? []
-            let paid = mine.filter(\.paid).reduce(0) { $0 + $1.fee.amount } + (mine.contains(where: \.registrationPaid) ? Fee.registration : 0)
+            let paid = mine.filter(\.paid).reduce(0) { $0 + $1.amount } + mine.reduce(0) { $0 + $1.registrationTotal }
             let registration = mine.first(where: \.registrationPaid).map { monthShort($0.month) }
             return ReportRow(columns: columns, cells: [.text("\(kid.flag) \(kid.fullName)")]
                 + months.map { key in
@@ -183,8 +185,8 @@ enum Report: Hashable {
             return .text("\(value)")
         }
         func monthTotal(_ key: Int, paidOnly: Bool) -> Int {
-            entries.filter { $0.month == key && (!paidOnly || $0.paid) }.reduce(0) { $0 + $1.fee.amount }
-                + entries.filter { $0.month == key && $0.registrationPaid }.count * Fee.registration
+            entries.filter { $0.month == key && (!paidOnly || $0.paid) }.reduce(0) { $0 + $1.amount }
+                + entries.filter { $0.month == key }.reduce(0) { $0 + $1.registrationTotal }
         }
         sections.append(ReportSection(
             title: ReportSectionTitle(text: tr("Month by Month")).block,
@@ -353,7 +355,7 @@ private struct ReportPage: View {
             ForEach(blocks.indices, id: \.self) { blocks[$0].view.frame(height: blocks[$0].height, alignment: .top) }
             Spacer(minLength: 0)
             HStack {
-                Text(verbatim: "Tracker · \(footer)")
+                Text(verbatim: "CoachBoard · \(footer)")
                 Spacer()
                 Text(verbatim: tr("Page \(number) of \(count)"))
             }
