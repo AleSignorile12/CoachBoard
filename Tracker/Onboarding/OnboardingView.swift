@@ -136,7 +136,7 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 24) {
                 FeatureRow(symbol: "person.3.fill", title: "Your Team",
                            text: "Every kid with age, nationality, parents and notes.")
-                FeatureRow(symbol: "eurosign.circle.fill", title: "Payments",
+                FeatureRow(symbol: Money.icon + ".fill", title: "Payments",
                            text: "Monthly fees and registrations, month by month.")
                 FeatureRow(symbol: "checkmark.seal.fill", title: "Documents",
                            text: "Medical certificates and IDs, always with you.")
@@ -201,7 +201,7 @@ struct OnboardingView: View {
             case .authorized, .provisional, .ephemeral:
                 Label("Reminders are on", systemImage: "checkmark.circle.fill")
                     .font(.headline)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.brand)
             case .denied:
                 Text("Notifications are off for CoachBoard. You can turn them on in Settings.")
                     .font(.subheadline)

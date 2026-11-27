@@ -1,4 +1,7 @@
 import SwiftUI
+#if !canImport(MLKitTranslate)
+import Translation
+#endif
 import SwiftData
 import UIKit
 import AVFoundation
@@ -13,6 +16,11 @@ struct SavedPhrase: Codable, Identifiable, Hashable {
 
 struct TranslatorView: View {
     @State private var engine = TranslationEngine()
+#if targetEnvironment(macCatalyst)
+    @Environment(\.inMacShell) private var inMacShell
+#else
+    private let inMacShell = false
+#endif
     @AppStorage("sourceLanguage") private var source: AppLanguage = .italian
     @AppStorage("targetLanguage") private var target: AppLanguage = .croatian
     @State private var input = ""
@@ -25,11 +33,12 @@ struct TranslatorView: View {
     @State private var swapTurns = 0
     @State private var picking: LanguageSide?
     @State private var speaker = AVSpeechSynthesizer()
+    @State private var speech = SpeechInput()
     @AppStorage("savedPhrases") private var savedData = Data()
 
-    private var needsDownload: Bool {
-        !engine.downloaded.contains(source) || !engine.downloaded.contains(target)
-    }
+    private var missing: [AppLanguage] { engine.missing(source, target) }
+
+    private var needsDownload: Bool { !missing.isEmpty }
 
     private var trimmedInput: String { input.trimmingCharacters(in: .whitespacesAndNewlines) }
 
@@ -53,26 +62,51 @@ struct TranslatorView: View {
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets())
                 }
-                Section { inputCard }
-                    .cardBackground()
-                Section { outputCard }
-                    .cardBackground()
+                if inMacShell {
+                    sideBySide
+                } else {
+                    Section { inputCard }
+                        .cardBackground()
+                    Section { outputCard }
+                        .cardBackground()
+                }
                 savedSection
             }
             .listSectionSpacing(14)
-            .ambientBackground()
+#if targetEnvironment(macCatalyst)
+            // The same 32-point margins as the other Mac pages, using the whole width.
+            .contentMargins(.horizontal, inMacShell ? 32 : 0, for: .scrollContent)
+#endif
+            .macSidebarInset(inMacShell)
+            .ambientBackground(macWidth: inMacShell ? .infinity : 760)
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Translator")
+#if targetEnvironment(macCatalyst)
+            .macHidesToolbarTitle()
+            .safeAreaInset(edge: .top) {
+                MacPageHeader(title: "Translator") {
+                    MacHeaderButton(title: LanguagesSheet.title, symbol: LanguagesSheet.symbol) { showLanguages = true }
+                }
+                    .padding(.horizontal, 32)
+                    .padding(.top, 32)
+                    .frame(maxWidth: .infinity)
+                    .macSidebarInset(inMacShell)
+            }
+#endif
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Offline Languages", systemImage: "arrow.down.circle") { showLanguages = true }
+                // On the Mac the left of the toolbar is the sidebar's, so it goes right.
+                ToolbarItem(placement: inMacShell ? .topBarTrailing : .topBarLeading) {
+                    Button(LanguagesSheet.title, systemImage: LanguagesSheet.symbol) { showLanguages = true }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Practice Calendar", systemImage: "calendar") { showCalendar = true }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showProfile = true } label: { ProfileIcon() }
-                        .accessibilityLabel("My Profile")
+                // On the Mac these two live in the sidebar.
+                if !inMacShell {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Practice Calendar", systemImage: "calendar") { showCalendar = true }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showProfile = true } label: { ProfileIcon() }
+                            .accessibilityLabel("My Profile")
+                    }
                 }
             }
             .sheet(isPresented: $showCalendar) { PracticeCalendarSheet() }
@@ -84,6 +118,8 @@ struct TranslatorView: View {
                 }
             }
             .task(id: "\(source.rawValue)>\(target.rawValue):\(input)") { await translate() }
+            .onChange(of: source) { speech.stop() }
+            .onDisappear { speech.stop() }
             .onAppear { engine.refresh() }
         }
     }
@@ -127,7 +163,13 @@ struct TranslatorView: View {
         Button {
             showLanguages = true
         } label: {
-            Label("Download \(source.name) and \(target.name) to translate offline", systemImage: "wifi.slash")
+            Group {
+                if missing.count == 1, let language = missing.first {
+                    Label("Download \(language.name) to translate offline", systemImage: "wifi.slash")
+                } else {
+                    Label("Download \(source.name) and \(target.name) to translate offline", systemImage: "wifi.slash")
+                }
+            }
                 .font(.footnote.weight(.medium))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -138,12 +180,27 @@ struct TranslatorView: View {
 
     private var inputCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(source.name)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.tint)
-            TextField("Enter text", text: $input, axis: .vertical)
+            HStack {
+                Text(source.name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.tint)
+                Spacer()
+                micButton
+            }
+            TextField(speech.isListening ? "Speak now…" : "Enter text", text: $input, axis: .vertical)
                 .font(.title3)
                 .lineLimit(3...12)
+            if speech.isListening {
+                Label("Listening in \(source.name)…", systemImage: "waveform")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.red)
+                    .symbolEffect(.variableColor.iterative, options: .repeating)
+                    .transition(.opacity)
+            } else if let problem = speech.problem {
+                Text(problem)
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+            }
             if !input.isEmpty {
                 HStack(spacing: 18) {
                     if source.voice != nil {
@@ -159,6 +216,67 @@ struct TranslatorView: View {
             }
         }
         .padding(.vertical, 6)
+    }
+
+    /// Mac: the text and its translation next to each other, like two pages.
+    @ViewBuilder private var sideBySide: some View {
+#if targetEnvironment(macCatalyst)
+        Section {
+            HStack(alignment: .top, spacing: 16) {
+                inputCard
+                    .padding(.horizontal, 6)
+                    .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
+                    .macPanel()
+                outputCard
+                    .padding(.horizontal, 6)
+                    .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
+                    .macPanel()
+            }
+        }
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
+#endif
+    }
+
+    /// Speak instead of typing, in the "from" language. Red with a stop square while listening.
+    private var micButton: some View {
+        Button(action: toggleListening) {
+            Image(systemName: speech.isListening ? "stop.fill" : "mic.fill")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(speech.isListening ? Color.red : Color.brand, in: .circle)
+                .contentTransition(.symbolEffect(.replace))
+                .overlay {
+                    if speech.isListening {
+                        // A ring that keeps swelling and fading out, like a sound wave.
+                        Circle().stroke(Color.red.opacity(0.5), lineWidth: 3)
+                            .phaseAnimator([false, true]) { ring, out in
+                                ring.scaleEffect(out ? 1.5 : 1).opacity(out ? 0 : 1)
+                            } animation: { out in out ? .easeOut(duration: 1.1) : .linear(duration: 0) }
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(speech.isListening ? "Stop Listening" : "Speak")
+        .help(speech.isListening ? "Stop Listening" : "Speak")
+        .sensoryFeedback(.start, trigger: speech.isListening) { _, new in new }
+        .sensoryFeedback(.stop, trigger: speech.isListening) { old, _ in old }
+        .animation(.snappy, value: speech.isListening)
+    }
+
+    private func toggleListening() {
+        if speech.isListening {
+            speech.stop()
+            return
+        }
+        // What was already typed stays; the spoken words come after it.
+        let typed = trimmedInput
+        Task {
+            await speech.start(source) { spoken in
+                input = typed.isEmpty ? spoken : "\(typed) \(spoken)"
+            }
+        }
     }
 
     private var outputCard: some View {
@@ -395,7 +513,7 @@ struct LanguagePickerSheet: View {
         } label: {
             LanguageRow(language: language) {
                 if language == selected {
-                    Image(systemName: "checkmark").foregroundStyle(Color.accentColor).fontWeight(.semibold)
+                    Image(systemName: "checkmark").foregroundStyle(Color.brand).fontWeight(.semibold)
                 }
             }
         }
@@ -425,38 +543,16 @@ struct LanguagesSheet: View {
                 if let errorText {
                     Section { Text(errorText).foregroundStyle(.red) }
                 }
-                let onPhone = matches.filter { engine.downloaded.contains($0) }
-                if !onPhone.isEmpty {
-                    Section {
-                        ForEach(onPhone) { language in
-                            LanguageRow(language: language) { status(language) }
-                                .swipeActions {
-                                    if language != .english {
-                                        Button("Delete", systemImage: "trash", role: .destructive) {
-                                            Task { await engine.delete(language) }
-                                        }
-                                    }
-                                }
-                        }
-                    } header: {
-                        Text("On This iPhone")
-                    } footer: {
-                        Text("These work with no internet. Swipe left to remove one.")
-                    }
-                }
-                Section {
-                    ForEach(matches.filter { !engine.downloaded.contains($0) }) { language in
-                        LanguageRow(language: language) { status(language) }
-                    }
-                } header: {
-                    Text("Available")
-                } footer: {
-                    Text("Each language is about 30 MB. Download on Wi-Fi before training, then translate anywhere.")
-                }
+                let onDevice = matches.filter { engine.downloaded.contains($0) && !engine.isOnline($0) }
+                let online = matches.filter { engine.isOnline($0) }
+                let available = matches.filter { !engine.downloaded.contains($0) }
+                if !onDevice.isEmpty { onDeviceSection(onDevice) }
+                if !available.isEmpty || !Self.onMac { availableSection(available) }
+                if !online.isEmpty { onlineSection(online) }
             }
             .overlay { if matches.isEmpty { ContentUnavailableView.search(text: search) } }
             .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search languages")
-            .navigationTitle("Offline Languages")
+            .navigationTitle(Self.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -464,17 +560,85 @@ struct LanguagesSheet: View {
                 }
             }
             .onAppear { engine.refresh() }
+#if !canImport(MLKitTranslate)
+            // Apple's download prompt for the language the coach picked (Mac only).
+            .translationTask(engine.preparation) { session in
+                try? await session.prepareTranslation()
+                engine.preparationFinished()
+            }
+#endif
+        }
+    }
+
+#if targetEnvironment(macCatalyst)
+    private static let onMac = true
+#else
+    private static let onMac = false
+#endif
+
+    /// On the Mac the list also holds the online languages, so it isn't only "offline".
+    static let title: LocalizedStringKey = onMac ? "Languages" : "Offline Languages"
+    static let symbol = onMac ? "globe" : "arrow.down.circle"
+
+    private func onDeviceSection(_ languages: [AppLanguage]) -> some View {
+        Section {
+            ForEach(languages) { language in
+                LanguageRow(language: language) { status(language) }
+                    .swipeActions {
+                        if language != .english && !Self.onMac {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                Task { await engine.delete(language) }
+                            }
+                        }
+                    }
+            }
+        } header: {
+            Text(Self.onMac ? "On This Mac" : "On This iPhone")
+        } footer: {
+            Text(Self.onMac
+                 ? "These work with no internet. To remove one, go to System Settings › General › Language & Region › Translation Languages."
+                 : "These work with no internet. Swipe left to remove one.")
+        }
+    }
+
+    private func availableSection(_ languages: [AppLanguage]) -> some View {
+        Section {
+            ForEach(languages) { language in
+                LanguageRow(language: language) { status(language) }
+            }
+        } header: {
+            Text("Available")
+        } footer: {
+            Text(Self.onMac
+                 ? "macOS downloads these once and shares them with its other apps. Then they work with no internet."
+                 : "Each language is about 30 MB. Download on Wi-Fi before training, then translate anywhere.")
+        }
+    }
+
+    private func onlineSection(_ languages: [AppLanguage]) -> some View {
+        Section {
+            ForEach(languages) { language in
+                LanguageRow(language: language) { status(language) }
+            }
+        } header: {
+            Text("Online")
+        } footer: {
+            Text("The Mac's own translator doesn't have these, so they're translated online by MyMemory, a free service with no account. It needs the internet and allows about 5,000 characters a day.")
         }
     }
 
     @ViewBuilder
     private func status(_ language: AppLanguage) -> some View {
-        if language == .english {
+        if engine.isOnline(language) {
+            Label("Online", systemImage: "cloud")
+                .labelStyle(.titleAndIcon)
+                .foregroundStyle(.secondary)
+        } else if language == .english && !Self.onMac {
             Text("Built in").foregroundStyle(.secondary)
         } else if engine.downloading.contains(language) {
             ProgressView()
         } else if engine.downloaded.contains(language) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.accentColor)
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.brand)
                 .accessibilityLabel("Downloaded")
         } else {
             Button("Download \(language.name)", systemImage: "arrow.down.circle") {
@@ -502,17 +666,35 @@ private struct ProfileIcon: View {
     @Query private var coaches: [Coach]
 
     var body: some View {
-        if let data = coaches.first?.photo,
-           let image = UIImage(data: data)?.preparingThumbnail(of: CGSize(width: 72, height: 72)) {
+        if let data = coaches.first?.photo, let image = Self.round(data) {
+            // A finished round picture at its final size (not a resizable image): toolbars, the Mac's above all,
+            // stretch a resizable image to the button's shape.
             Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                // Same visual size as the SF Symbols next to it (calendar icon).
-                .frame(width: 24, height: 24)
-                .clipShape(.circle)
-                .overlay { Circle().strokeBorder(.tint, lineWidth: 1.5) }
+                .renderingMode(.original)
+                .accessibilityLabel("My Profile")
         } else {
             Image(systemName: "person.crop.circle")
+        }
+    }
+
+    /// The photo cropped to a circle with a thin blue ring, the same visual size as the SF Symbols next to it.
+    private static func round(_ data: Data) -> UIImage? {
+        guard let photo = UIImage(data: data) else { return nil }
+        let side: CGFloat = 26
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 3
+        return UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: format).image { _ in
+            let bounds = CGRect(x: 0, y: 0, width: side, height: side)
+            // Fill the circle without stretching: scale the shorter side to fit, centre the longer one.
+            let scale = side / min(photo.size.width, photo.size.height)
+            let size = CGSize(width: photo.size.width * scale, height: photo.size.height * scale)
+            let circle = UIBezierPath(ovalIn: bounds)
+            circle.addClip()
+            photo.draw(in: CGRect(x: (side - size.width) / 2, y: (side - size.height) / 2, width: size.width, height: size.height))
+            let ring = UIBezierPath(ovalIn: bounds.insetBy(dx: 0.75, dy: 0.75))
+            ring.lineWidth = 1.5
+            (UIColor(named: "AccentColor") ?? .systemBlue).setStroke()
+            ring.stroke()
         }
     }
 }

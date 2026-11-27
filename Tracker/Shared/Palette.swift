@@ -2,6 +2,10 @@ import SwiftUI
 import UIKit
 
 extension Color {
+    /// The app's blue (Assets › AccentColor). Not `Color.accentColor`: on the Mac that one is the accent picked in
+    /// System Settings, not the app's own.
+    static let brand = Color("AccentColor")
+
     /// Light blue for the symbol inside the blue "pop" buttons (a bit lighter still in dark mode,
     /// where the accent blue itself is brighter).
     static let softAccent = Color(UIColor { traits in
@@ -12,8 +16,8 @@ extension Color {
 }
 
 extension ShapeStyle where Self == Color {
-    /// The app's blue (Assets › AccentColor), usable as `.accentColor` anywhere a style is expected.
-    static var accentColor: Color { Color.accentColor }
+    /// The app's blue, usable as `.brand` anywhere a style is expected.
+    static var brand: Color { Color.brand }
 }
 
 extension View {
@@ -21,7 +25,7 @@ extension View {
     /// Add Kid, Add Kids, the translator's swap button and Training Days.
     func popButton() -> some View {
         buttonStyle(.glassProminent)
-            .tint(Color.accentColor)
+            .tint(Color.brand)
             .foregroundStyle(Color.softAccent)
     }
 }

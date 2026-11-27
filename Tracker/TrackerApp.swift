@@ -10,6 +10,11 @@ struct TrackerApp: App {
         #if DEBUG
         SelfCheck.run()
         #endif
+        // Fees, certificates, currency and the other club settings, the same on iPhone and Mac. Not in debug
+        // builds, so test values never reach the coach's real settings in iCloud.
+        #if !DEBUG
+        SettingsSync.start()
+        #endif
     }
 
     var body: some Scene {
@@ -26,7 +31,7 @@ struct TrackerApp: App {
     /// Same store file as before (so existing data is kept), now mirrored to the coach's private iCloud database.
     /// Without an iCloud account it keeps working on this iPhone and syncs once the coach signs in.
     static let container: ModelContainer = {
-        let types: [any PersistentModel.Type] = [Kid.self, Coach.self, StoredFile.self, PaymentEntry.self, PracticeDay.self]
+        let types: [any PersistentModel.Type] = [Kid.self, Coach.self, StoredFile.self, PaymentEntry.self, PracticeDay.self, ExtraCharge.self]
         #if DEBUG
         CloudKitSchema.initializeIfAsked(types: types, container: iCloudContainer)
         #endif
@@ -55,6 +60,8 @@ private struct RootView: View {
     @State private var showSplash = true
     @Query private var paymentEntries: [PaymentEntry]
     @AppStorage(TrainingDays.storageKey) private var trainingRaw = TrainingDays.defaultValue
+    /// Read so the Payments tab's symbol follows the currency.
+    @AppStorage(Money.storageKey) private var currency = "EUR"
 
     /// What the Home and Lock Screen widgets show (rebuilt whenever kids, payments, training days or the date change).
     private var widgetSnapshot: WidgetSnapshot {
@@ -67,15 +74,29 @@ private struct RootView: View {
         }
     }
 
-    var body: some View {
+    /// iPhone: the four tabs. Mac: a sidebar with a dashboard and tables (Mac/MacShell.swift).
+    @ViewBuilder private var main: some View {
+#if targetEnvironment(macCatalyst)
+        MacRootView()
+#else
         TabView {
             Tab("Translator", systemImage: "translate") { TranslatorView() }
             Tab("Kids", systemImage: "person.3") { KidsView() }
-            Tab("Payments", systemImage: "eurosign.circle") { PaymentsView() }
+            Tab("Payments", systemImage: Money.icon) { PaymentsView() }
             Tab("Certifications", systemImage: "checkmark.seal") { CertificationsView() }
         }
         .background { KeepTabBarTinted() }
-        .sheet(isPresented: Binding { !didOnboard && !showSplash } set: { didOnboard = !$0 }) {
+#endif
+    }
+
+    var body: some View {
+        main
+            // The app's own blue everywhere, also on a Mac whose system accent is another color.
+            .tint(Color.brand)
+#if targetEnvironment(macCatalyst)
+            .onAppear { MacWindow.setUp() }
+#endif
+        .sheetOrCover(isPresented: Binding { !didOnboard && !showSplash } set: { didOnboard = !$0 }) {
             OnboardingView { didOnboard = true }
                 // First launch: closed with Skip or Let's Go, not by an accidental swipe.
                 .interactiveDismissDisabled()

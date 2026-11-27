@@ -58,7 +58,11 @@ final class AppLock {
             if isLocked { show(); unlock() } else { hide() }
         case .inactive:
             // Covers the app in the app switcher (during the launch animation the animation already covers it).
+            // Not on the Mac: there the window goes inactive every time another app is clicked, and there's no
+            // app switcher preview to hide. It still locks when hidden, minimized or closed (background).
+#if !targetEnvironment(macCatalyst)
             if isEnabled && !waitingForSplash { show() }
+#endif
         case .background:
             if isEnabled {
                 isLocked = true

@@ -7,6 +7,8 @@ struct PaymentsView: View {
     @Query private var entries: [PaymentEntry]
     @State private var month = Month.key(.now)
     @State private var showAdd = false
+    @State private var showCharge = false
+    private var settings = MoneySettings()
     @State private var showMonthPicker = false
     @State private var reportURL: URL?
     @AppStorage(ReportLanguage.storageKey) private var reportLanguage = ReportLanguage.automatic
@@ -16,7 +18,7 @@ struct PaymentsView: View {
         entries
             .filter { $0.month == month && $0.kid != nil }
             .sorted { a, b in
-                if a.paid != b.paid { return !a.paid }
+                if a.settled != b.settled { return !a.settled }
                 return (a.kid?.fullName ?? "").localizedStandardCompare(b.kid?.fullName ?? "") == .orderedAscending
             }
     }
@@ -29,10 +31,8 @@ struct PaymentsView: View {
     /// Registrations paid this month (already-received money, so it counts in both collected and total).
     private var registrations: Int { monthEntries.filter(\.registrationPaid).count }
     private var registrationTotal: Int { monthEntries.reduce(0) { $0 + $1.registrationTotal } }
-    private var total: Int { monthEntries.reduce(0) { $0 + $1.amount } + registrationTotal }
-    private var collected: Int {
-        monthEntries.filter(\.paid).reduce(0) { $0 + $1.amount } + registrationTotal
-    }
+    private var total: Int { monthEntries.reduce(0) { $0 + $1.lineTotal } }
+    private var collected: Int { monthEntries.reduce(0) { $0 + $1.collected } }
 
     var body: some View {
         NavigationStack {
@@ -43,9 +43,14 @@ struct PaymentsView: View {
                     Section {
                         ForEach(monthEntries) { PaymentRow(entry: $0).cardBackground() }
                     } header: {
-                        Text("\(monthEntries.filter(\.paid).count) of \(monthEntries.count) paid")
+                        Text("\(monthEntries.filter(\.settled).count) of \(monthEntries.count) paid")
                     } footer: {
-                        Text("Tap the circle to mark as paid. Tap the fee to switch between standard and reduced for siblings or friends. Tap Registration when a kid pays the registration, once per season (\(Month.seasonTitle(Month.season(month))), September to August): a seal with the paid month then appears under the fee. Tap it in the month it was paid to undo it. Swipe to remove a kid from this month. Set the amounts in My Profile › Fees.")
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Tap the circle to mark the fee as paid, and tap the fee to pick another plan. Extra charges sit under the fee and are ticked on their own. Swipe to remove a kid from this month. Set the plans and amounts in My Profile › Fees.")
+                            if settings.registrationOn {
+                                Text("Tap Registration when a kid pays it, once per season (\(Month.seasonTitle(Month.season(month))), \(SeasonSettings.monthsTitle)): a seal with the month it was paid then shows under the fee. Tap it in that month to undo it.")
+                            }
+                        }
                     }
                 }
             }
@@ -77,6 +82,10 @@ struct PaymentsView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button("Add Charge", systemImage: "tag") { showCharge = true }
+                        .disabled(monthEntries.isEmpty)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Add Kids", systemImage: "person.badge.plus") { showAdd = true }
                         .popButton()
                 }
@@ -86,6 +95,7 @@ struct PaymentsView: View {
             .sheet(isPresented: $showAdd) {
                 AddToMonthSheet(month: month, existing: Set(monthEntries.compactMap { $0.kid?.persistentModelID }))
             }
+            .sheet(isPresented: $showCharge) { AddChargeSheet(month: month) }
             .sheet(isPresented: $showMonthPicker) {
                 MonthPickerSheet(month: $month, monthsWithKids: Set(entries.map(\.month)), fullyPaid: fullyPaidMonths)
             }
@@ -96,7 +106,7 @@ struct PaymentsView: View {
     /// Months where every kid on the list paid the monthly fee (registration not counted).
     private var fullyPaidMonths: Set<Int> {
         let byMonth = Dictionary(grouping: entries.filter { $0.kid != nil }, by: \.month)
-        return Set(byMonth.filter { $0.value.allSatisfy(\.paid) }.keys)
+        return Set(byMonth.filter { $0.value.allSatisfy(\.settled) }.keys)
     }
 
     /// The previous version stored one registration per kid (`Kid.registrationMonth`). Move it onto
@@ -115,16 +125,16 @@ struct PaymentsView: View {
     private var summary: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                stat("Collected", collected, .accentColor)
+                stat("Collected", collected, .brand)
                 Spacer()
                 stat("Missing", total - collected, total == collected ? .secondary : .orange)
                 Spacer()
                 stat("Total", total, .primary)
             }
             ProgressView(value: Double(collected), total: Double(max(total, 1)))
-                .tint(Color.accentColor)
+                .tint(Color.brand)
             if registrations > 0 {
-                Label("Registrations included: \(registrations) (\(registrationTotal) €)",
+                Label("Registrations included: \(registrations) (\(Money.format(registrationTotal)))",
                       systemImage: "signature")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -136,7 +146,7 @@ struct PaymentsView: View {
     private func stat(_ title: LocalizedStringKey, _ euros: Int, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(euros, format: .currency(code: "EUR").precision(.fractionLength(0)))
+            Text(Money.format(euros))
                 .font(.title3.bold())
                 .monospacedDigit()
                 .foregroundStyle(color)
@@ -145,7 +155,7 @@ struct PaymentsView: View {
 
     private var emptyState: some View {
         ContentUnavailableView {
-            Label("No Kids This Month", systemImage: "eurosign.circle")
+            Label("No Kids This Month", systemImage: Money.icon)
         } description: {
             Text("Add the kids who train in \(Month.title(month)).")
         } actions: {
@@ -173,7 +183,7 @@ struct PaymentsView: View {
                         Image(systemName: "chevron.up.chevron.down").font(.caption.weight(.semibold))
                     }
                     .font(.headline)
-                    .foregroundStyle(fullyPaidMonths.contains(month) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
+                    .foregroundStyle(fullyPaidMonths.contains(month) ? AnyShapeStyle(Color.brand) : AnyShapeStyle(.primary))
                     .frame(minWidth: 160)
                 }
                 .accessibilityHint("Choose a month")
@@ -193,7 +203,7 @@ struct PaymentsView: View {
     private func copy(from template: Int) {
         for old in entries where old.month == template {
             guard let kid = old.kid else { continue }
-            let entry = PaymentEntry(month: month, fee: old.fee)
+            let entry = PaymentEntry(month: month, fee: old.fee.orFirst)
             context.insert(entry)
             entry.kid = kid
         }
@@ -203,6 +213,14 @@ struct PaymentsView: View {
 private struct PaymentRow: View {
     @Bindable var entry: PaymentEntry
     @Environment(\.modelContext) private var context
+    private var settings = MoneySettings()
+
+    init(entry: PaymentEntry) { self.entry = entry }
+
+    /// "Under 10", or "Under 10 · Quarterly" for a plan that isn't monthly.
+    private var feeLabel: String {
+        entry.fee.frequency == .monthly ? entry.feeName : "\(entry.feeName) · \(entry.fee.frequency.title)"
+    }
 
     var body: some View {
         if let kid = entry.kid {
@@ -212,7 +230,7 @@ private struct PaymentRow: View {
                 } label: {
                     Image(systemName: entry.paid ? "checkmark.circle.fill" : "circle")
                         .font(.title)
-                        .foregroundStyle(entry.paid ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+                        .foregroundStyle(entry.paid ? AnyShapeStyle(Color.brand) : AnyShapeStyle(.tertiary))
                         .contentTransition(.symbolEffect(.replace))
                 }
                 .buttonStyle(.plain)
@@ -227,17 +245,17 @@ private struct PaymentRow: View {
                         .font(.headline)
                     Menu {
                         Picker("Fee", selection: $entry.fee) {
-                            ForEach(Fee.allCases) { fee in
-                                Label("\(fee.title) · \(fee.amount) €", systemImage: fee.icon).tag(fee)
+                            ForEach(Fee.choices(including: entry.fee)) { fee in
+                                Label("\(fee == entry.fee ? entry.feeName : fee.title) · \(Money.format(fee.amount))", systemImage: fee.icon).tag(fee)
                             }
                         }
                     } label: {
                         HStack(spacing: 4) {
-                            Label(entry.fee.title, systemImage: entry.fee.icon)
+                            Label(feeLabel, systemImage: entry.fee.icon)
                             Image(systemName: "chevron.up.chevron.down").imageScale(.small)
                         }
                         .font(.caption.weight(.medium))
-                        .foregroundStyle(entry.fee == .standard ? AnyShapeStyle(.secondary) : AnyShapeStyle(.purple))
+                        .foregroundStyle(entry.fee == Fee.first ? AnyShapeStyle(.secondary) : AnyShapeStyle(.purple))
                     }
                     // Only one of these shows: the badge once paid this season, otherwise the button.
                     registrationBadge(kid)
@@ -245,20 +263,21 @@ private struct PaymentRow: View {
                         .font(.caption.weight(.medium))
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
+                    ForEach(entry.sortedCharges) { ChargeChip(charge: $0) }
                 }
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(entry.amount, format: .currency(code: "EUR").precision(.fractionLength(0)))
+                    Text(Money.format(entry.amount))
                         .font(.body.weight(.semibold))
                         .monospacedDigit()
-                        .foregroundStyle(entry.paid ? .accentColor : .primary)
+                        .foregroundStyle(entry.paid ? .brand : .primary)
                     if entry.registrationPaid {
-                        Text("+\(entry.registrationAmount) €")
+                        Text("+\(Money.format(entry.registrationAmount))")
                             .font(.caption.weight(.semibold))
                             .monospacedDigit()
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.brand)
                     }
                 }
             }
@@ -266,7 +285,7 @@ private struct PaymentRow: View {
                 Button(entry.paid ? "Not Paid" : "Paid", systemImage: entry.paid ? "xmark" : "checkmark") {
                     withAnimation(.snappy) { entry.paid.toggle() }
                 }
-                .tint(entry.paid ? .gray : .accentColor)
+                .tint(entry.paid ? .gray : .brand)
             }
             .swipeActions(edge: .trailing) {
                 Button("Remove", systemImage: "person.badge.minus", role: .destructive) {
@@ -287,7 +306,7 @@ private struct PaymentRow: View {
                 Text(Month.shortTitle(paid.month))
             }
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.accentColor)
+            .foregroundStyle(Color.brand)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Registration \(Month.seasonTitle(season)) paid in \(Month.title(paid.month))")
 
@@ -305,15 +324,15 @@ private struct PaymentRow: View {
         }
     }
 
-    /// Registration, once per season: the button shows only while unpaid this season.
-    /// "30 €" uses a no-break space so the € never wraps alone.
+    /// Registration, once per season: the button shows only while unpaid this season (and while the club asks
+    /// for one, see My Profile › Fees).
     @ViewBuilder
     private func registration(_ kid: Kid) -> some View {
-        if kid.registrationEntry(season: Month.season(entry.month)) == nil {
+        if settings.registrationOn, kid.registrationEntry(season: Month.season(entry.month)) == nil {
             Button {
                 entry.registrationPaid = true
             } label: {
-                Label("Registration \(entry.registrationAmount)\u{00A0}€", systemImage: "plus.circle")
+                Label("Registration \(Money.format(entry.registrationAmount))", systemImage: "plus.circle")
             }
             .buttonStyle(.borderless)
             .sensoryFeedback(.success, trigger: entry.registrationPaid)
@@ -323,12 +342,15 @@ private struct PaymentRow: View {
 
 // MARK: - Month picker
 
-private struct MonthPickerSheet: View {
+struct MonthPickerSheet: View {
     @Binding var month: Int
     let monthsWithKids: Set<Int>
     let fullyPaid: Set<Int>
     @State private var year: Int
     @Environment(\.dismiss) private var dismiss
+    /// On the Mac these open as a panel over the window (Mac/MacShell.swift), which closes differently.
+    @Environment(\.macClose) private var macClose
+    private func close() { if let macClose { macClose() } else { dismiss() } }
 
     init(month: Binding<Int>, monthsWithKids: Set<Int>, fullyPaid: Set<Int>) {
         _month = month
@@ -339,12 +361,12 @@ private struct MonthPickerSheet: View {
 
     private func foreground(_ key: Int) -> AnyShapeStyle {
         if key == month { return AnyShapeStyle(.white) }
-        return fullyPaid.contains(key) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary)
+        return fullyPaid.contains(key) ? AnyShapeStyle(Color.brand) : AnyShapeStyle(.primary)
     }
 
     private func background(_ key: Int) -> AnyShapeStyle {
-        if key == month { return fullyPaid.contains(key) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tint) }
-        return fullyPaid.contains(key) ? AnyShapeStyle(Color.accentColor.opacity(0.18)) : AnyShapeStyle(.fill.tertiary)
+        if key == month { return fullyPaid.contains(key) ? AnyShapeStyle(Color.brand) : AnyShapeStyle(.tint) }
+        return fullyPaid.contains(key) ? AnyShapeStyle(Color.brand.opacity(0.18)) : AnyShapeStyle(.fill.tertiary)
     }
 
     var body: some View {
@@ -368,7 +390,7 @@ private struct MonthPickerSheet: View {
                         let key = year * 100 + number
                         Button {
                             month = key
-                            dismiss()
+                            close()
                         } label: {
                             VStack(spacing: 4) {
                                 Text(Calendar.current.shortStandaloneMonthSymbols[number - 1])
@@ -396,7 +418,7 @@ private struct MonthPickerSheet: View {
                 } icon: {
                     Image(systemName: "checkmark.circle.fill")
                         .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, Color.accentColor)
+                        .foregroundStyle(.white, Color.brand)
                 }
                 .font(.footnote)
                 Spacer(minLength: 0)
@@ -408,11 +430,11 @@ private struct MonthPickerSheet: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Today") {
                         month = Month.key(.now)
-                        dismiss()
+                        close()
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .close) { dismiss() }
+                    Button(role: .close) { close() }
                 }
             }
         }
@@ -422,11 +444,14 @@ private struct MonthPickerSheet: View {
 
 // MARK: - Add kids to a month
 
-private struct AddToMonthSheet: View {
+struct AddToMonthSheet: View {
     let month: Int
     let existing: Set<PersistentIdentifier>
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    /// On the Mac these open as a panel over the window (Mac/MacShell.swift), which closes differently.
+    @Environment(\.macClose) private var macClose
+    private func close() { if let macClose { macClose() } else { dismiss() } }
     @Query(sort: [SortDescriptor(\Kid.firstName), SortDescriptor(\Kid.lastName)]) private var kids: [Kid]
     @State private var selection: Set<PersistentIdentifier> = []
 
@@ -439,7 +464,7 @@ private struct AddToMonthSheet: View {
                     Text(kid.flag).font(.title2)
                     Text(kid.fullName)
                     Spacer()
-                    Text("\(kid.lastFee.amount) €").foregroundStyle(.secondary)
+                    Text(Money.format(kid.lastFee.amount(inMonth: month))).foregroundStyle(.secondary)
                 }
             }
             .environment(\.editMode, .constant(.active))
@@ -456,7 +481,7 @@ private struct AddToMonthSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(role: .cancel) { dismiss() }
+                    Button(role: .cancel) { close() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) {
@@ -465,7 +490,7 @@ private struct AddToMonthSheet: View {
                             context.insert(entry)
                             entry.kid = kid
                         }
-                        dismiss()
+                        close()
                     }
                     .disabled(selection.isEmpty)
                 }

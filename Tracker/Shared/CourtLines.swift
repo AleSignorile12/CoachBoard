@@ -40,18 +40,24 @@ struct CourtLines: View {
         if sport != .none {
             Canvas { context, size in
                 let court = Self.court(sport)
-                // The whole court, mirrored from its half across the halfway line, fitted between the large title
-                // and the tab bar with a margin on both sides.
-                let top: CGFloat = 100, bottom = size.height - 100
-                let scale = min((min(size.width - 24, 460)) / court.width, (bottom - top) / (2 * court.length))
-                let width = court.width * scale, height = 2 * court.length * scale
-                let origin = CGPoint(x: (size.width - width) / 2, y: top + (bottom - top - height) / 2)
+                let frame = Self.frame(in: size)
+                // A window wider than tall (the Mac) gets the court lying down, so it fills the width.
+                let horizontal = Self.isMac && frame.width > frame.height * 1.15
+                // The whole court, mirrored from its half across the halfway line, fitted in the frame.
+                let across = horizontal ? frame.height : min(frame.width, Self.isMac ? .infinity : 460)
+                let along = horizontal ? frame.width : frame.height
+                let scale = min(across / court.width, along / (2 * court.length))
+                let center = CGPoint(x: frame.midX, y: frame.midY)
                 // Court coordinates: x from the left sideline, y from the halfway line (0) to one baseline (length).
+                let place = horizontal
+                    ? CGAffineTransform(a: 0, b: scale, c: scale, d: 0,
+                                        tx: center.x, ty: center.y - court.width * scale / 2)
+                    : CGAffineTransform(a: scale, b: 0, c: 0, d: scale,
+                                        tx: center.x - court.width * scale / 2, ty: center.y)
                 func whole(_ half: CGPath) -> Path {
                     let full = CGMutablePath()
                     full.addPath(half)
                     full.addPath(half, transform: CGAffineTransform(scaleX: 1, y: -1))
-                    let place = CGAffineTransform(translationX: origin.x, y: origin.y + height / 2).scaledBy(x: scale, y: scale)
                     return Path(full).applying(place)
                 }
                 context.stroke(whole(court.lines), with: .color(lineColor), lineWidth: 3)
@@ -61,6 +67,20 @@ struct CourtLines: View {
             .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
+    }
+
+#if targetEnvironment(macCatalyst)
+    private static let isMac = true
+#else
+    private static let isMac = false
+#endif
+
+    /// Where the court may go: between the large title and the tab bar on iPhone, with a margin on both sides;
+    /// on the Mac below the toolbar, with room all around.
+    private static func frame(in size: CGSize) -> CGRect {
+        isMac
+            ? CGRect(x: 48, y: 76, width: size.width - 96, height: size.height - 76 - 40)
+            : CGRect(x: 12, y: 100, width: size.width - 24, height: size.height - 200)
     }
 
     private var lineColor: Color {

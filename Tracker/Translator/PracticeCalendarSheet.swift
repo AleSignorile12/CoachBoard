@@ -5,6 +5,9 @@ import SwiftData
 /// (Tuesday and Thursday unless changed): practice (green) or no practice (red), plus a note.
 struct PracticeCalendarSheet: View {
     @Environment(\.dismiss) private var dismiss
+    /// On the Mac these open as a panel over the window (Mac/MacShell.swift), which closes differently.
+    @Environment(\.macClose) private var macClose
+    private func close() { if let macClose { macClose() } else { dismiss() } }
     @Environment(\.modelContext) private var context
     @Query private var days: [PracticeDay]
     @State private var month = Month.key(.now)
@@ -61,6 +64,94 @@ struct PracticeCalendarSheet: View {
     }
 
     var body: some View {
+#if targetEnvironment(macCatalyst)
+        macBody
+#else
+        phoneBody
+#endif
+    }
+
+    private var grid: some View {
+        ForEach(Array(weeks.enumerated()), id: \.offset) { index, week in
+            HStack(spacing: 0) {
+                ForEach(Array(week.enumerated()), id: \.offset) { _, day in
+                    if let day {
+                        dayCell(day, topLine: index > 0)
+                    } else {
+                        // Fixed height: an unsized Color.clear would stretch the row.
+                        Color.clear.frame(maxWidth: .infinity).frame(height: rowHeight)
+                    }
+                }
+            }
+        }
+    }
+
+#if targetEnvironment(macCatalyst)
+    private static let compact = true
+
+    /// Mac: the month on the left in a smaller size, the selected day (practice and note) on the right.
+    private var macBody: some View {
+        NavigationStack {
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 10) {
+                        Text(Month.date(month).formatted(.dateTime.month(.wide).year()))
+                            .font(.title2.bold())
+                            .contentTransition(.numericText())
+                        Spacer()
+                        Button("Today") {
+                            withAnimation(.snappy) { month = Month.key(.now) }
+                            selected = isEnabled(today) ? today : nil
+                        }
+                        .buttonStyle(.glass)
+                        HStack(spacing: 4) {
+                            Button("Previous Month", systemImage: "chevron.left") { changeMonth(-1) }
+                            Button("Next Month", systemImage: "chevron.right") { changeMonth(1) }
+                        }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                    weekdayRow
+                    Divider()
+                    grid
+                    Divider()
+                    Spacer(minLength: 0)
+                }
+                .frame(width: 430)
+                Divider()
+                practiceArea
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.secondarySystemBackground).opacity(0.5))
+            }
+            .background(Color(.systemBackground))
+            .sensoryFeedback(.selection, trigger: selected)
+            .navigationTitle("Practice Calendar")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(role: .close) { close() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Training Days", systemImage: "figure.run") { showTrainingDays = true }
+                        .popButton()
+                }
+            }
+            .sheet(isPresented: $showTrainingDays) { TrainingDaysSheet() }
+            .onChange(of: trainingRaw) {
+                if let day = selected, !isEnabled(day) { selected = nil }
+            }
+            .onAppear { if selected == nil, isEnabled(today) { selected = today } }
+        }
+    }
+#else
+    private static let compact = false
+#endif
+
+    private var phoneBody: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 0) {
                 Text(Month.date(month).formatted(.dateTime.month(.wide)))
@@ -70,18 +161,7 @@ struct PracticeCalendarSheet: View {
                     .padding(.bottom, 8)
                 weekdayRow
                 Divider()
-                ForEach(Array(weeks.enumerated()), id: \.offset) { index, week in
-                    HStack(spacing: 0) {
-                        ForEach(Array(week.enumerated()), id: \.offset) { _, day in
-                            if let day {
-                                dayCell(day, topLine: index > 0)
-                            } else {
-                                // Fixed height: an unsized Color.clear would stretch the row.
-                                Color.clear.frame(maxWidth: .infinity).frame(height: rowHeight)
-                            }
-                        }
-                    }
-                }
+                grid
                 Divider()
                 practiceArea
             }
@@ -97,7 +177,7 @@ struct PracticeCalendarSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .close) { dismiss() }
+                    Button(role: .close) { close() }
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button("Previous Month", systemImage: "chevron.left") { changeMonth(-1) }
@@ -138,9 +218,10 @@ struct PracticeCalendarSheet: View {
     }
 
     // Same size as the HIG Title 3 style (20 pt), scaled with the user's text size.
-    @ScaledMetric(relativeTo: .title3) private var daySize: CGFloat = 20
-    @ScaledMetric(relativeTo: .title3) private var circleSize: CGFloat = 32
-    @ScaledMetric(relativeTo: .title3) private var rowHeight: CGFloat = 56
+    // Smaller on the Mac, where the text around it is smaller too.
+    @ScaledMetric(relativeTo: .title3) private var daySize: CGFloat = Self.compact ? 15 : 20
+    @ScaledMetric(relativeTo: .title3) private var circleSize: CGFloat = Self.compact ? 28 : 32
+    @ScaledMetric(relativeTo: .title3) private var rowHeight: CGFloat = Self.compact ? 48 : 56
 
     /// Like Apple Calendar: number near the top, small circle, dot underneath, and a hairline above
     /// each day (so lines stop where the month's days stop).
@@ -153,7 +234,7 @@ struct PracticeCalendarSheet: View {
         // Today is a black circle while nothing else is selected (a red number otherwise, like Apple Calendar);
         // a logged day keeps its green/red; a selected day is a black circle.
         let todayCircle = isToday && (isSelected || selected == nil)
-        let fill: Color? = status.map { $0.held ? .accentColor : .red } ?? (todayCircle || isSelected ? .primary : nil)
+        let fill: Color? = status.map { $0.held ? .brand : .red } ?? (todayCircle || isSelected ? .primary : nil)
 
         return Button {
             if enabled { selected = day }
@@ -313,7 +394,7 @@ private struct DayDetail: View {
                 }
             }
             HStack(spacing: 10) {
-                choice("Practice", systemImage: "checkmark", color: .accentColor, isOn: status?.held == true) { onSet(true) }
+                choice("Practice", systemImage: "checkmark", color: .brand, isOn: status?.held == true) { onSet(true) }
                 choice("No Practice", systemImage: "xmark", color: .red, isOn: status?.held == false) { onSet(false) }
             }
             NoteField(note: record?.note ?? "", missed: status?.held == false, onChange: onNote)

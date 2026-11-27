@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct CertificationsView: View {
+    /// Read so the list redraws when the tracked certificates change in Settings.
+    @AppStorage(CertificationTypes.storageKey) private var trackedRaw = ""
     @Query(sort: [SortDescriptor(\Kid.firstName), SortDescriptor(\Kid.lastName)]) private var kids: [Kid]
     @State private var selected: Kid?
 
@@ -16,7 +18,7 @@ struct CertificationsView: View {
                             Text("\(completeCount) of \(kids.count) kids complete")
                                 .font(.headline)
                             ProgressView(value: Double(completeCount), total: Double(kids.count))
-                                .tint(Color.accentColor)
+                                .tint(Color.brand)
                         }
                         .padding(.vertical, 4)
                     }
@@ -48,9 +50,9 @@ private struct CertificationRow: View {
 
     /// Light blue with one document, deepening to the app's blue when all are in.
     private var ringColor: Color {
-        let done = Double(kid.certificationCount) / Double(FileKind.certifications.count)
+        let done = kid.certificationProgress
         let start = Color(red: 0.62, green: 0.80, blue: 0.98)
-        return start.mix(with: .accentColor, by: (done - 1 / 3) * 1.5)
+        return start.mix(with: .brand, by: (done - 1 / 3) * 1.5)
     }
 
     var body: some View {
@@ -59,7 +61,7 @@ private struct CertificationRow: View {
             ZStack {
                 Circle().stroke(.fill.tertiary, lineWidth: 4)
                 Circle()
-                    .trim(from: 0, to: CGFloat(kid.certificationCount) / CGFloat(FileKind.certifications.count))
+                    .trim(from: 0, to: CGFloat(kid.certificationProgress))
                     .stroke(ringColor, style: .init(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text(kid.flag).font(.title2)
@@ -72,7 +74,7 @@ private struct CertificationRow: View {
                     ForEach(FileKind.certifications, id: \.self) { kind in
                         Image(systemName: kind.icon)
                             .font(.caption)
-                            .foregroundStyle(kid.file(kind) == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.accentColor))
+                            .foregroundStyle(kid.file(kind) == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.brand))
                             .accessibilityLabel("\(kind.title): \(kid.file(kind) == nil ? "missing" : "received")")
                     }
                 }
@@ -83,7 +85,7 @@ private struct CertificationRow: View {
             if kid.certificationsComplete {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.title2)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.brand)
                     .accessibilityLabel("All documents received")
             } else {
                 Text("\(kid.certificationCount)/\(FileKind.certifications.count)")
@@ -97,10 +99,13 @@ private struct CertificationRow: View {
     }
 }
 
-private struct CertificationSheet: View {
+struct CertificationSheet: View {
     let kid: Kid
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    /// On the Mac these open as a panel over the window (Mac/MacShell.swift), which closes differently.
+    @Environment(\.macClose) private var macClose
+    private func close() { if let macClose { macClose() } else { dismiss() } }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var picker = DocumentPicker()
     @State private var party = false
@@ -119,7 +124,7 @@ private struct CertificationSheet: View {
                 } footer: {
                     if kid.certificationsComplete {
                         Label("Everything received.", systemImage: "checkmark.seal.fill")
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.brand)
                     } else {
                         Text("\(FileKind.certifications.count - kid.certificationCount) still missing.")
                     }
@@ -132,7 +137,7 @@ private struct CertificationSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .close) { dismiss() }
+                    Button(role: .close) { close() }
                 }
             }
         }

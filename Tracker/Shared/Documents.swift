@@ -176,7 +176,7 @@ struct DocumentSlotRow: View {
                 HStack(spacing: 12) {
                     Image(systemName: file == nil ? kind.icon : "checkmark.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(file == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
+                        .foregroundStyle(file == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.brand))
                         .frame(width: 32)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(kind.title).foregroundStyle(.primary)

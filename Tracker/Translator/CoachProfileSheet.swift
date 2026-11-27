@@ -5,6 +5,9 @@ import PhotosUI
 struct CoachProfileSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    /// On the Mac these open as a panel over the window (Mac/MacShell.swift), which closes differently.
+    @Environment(\.macClose) private var macClose
+    private func close() { if let macClose { macClose() } else { dismiss() } }
     @Query private var coaches: [Coach]
 
     var body: some View {
@@ -20,7 +23,7 @@ struct CoachProfileSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .close) { dismiss() }
+                    Button(role: .close) { close() }
                 }
             }
         }
@@ -117,7 +120,12 @@ private struct CoachForm: View {
                 NavigationLink {
                     FeeSettingsView()
                 } label: {
-                    Label("Fees", systemImage: "eurosign.circle")
+                    Label("Fees", systemImage: Money.icon)
+                }
+                NavigationLink {
+                    CertificationSettingsView()
+                } label: {
+                    Label("Certificates", systemImage: "checkmark.seal")
                 }
                 Button("Welcome Tour", systemImage: "sparkles") { showTour = true }
             } header: {
@@ -155,7 +163,7 @@ private struct CoachForm: View {
                 Text("Swipe a file to rename or delete it.")
             }
         }
-        .sheet(isPresented: $showTour) {
+        .sheetOrCover(isPresented: $showTour) {
             OnboardingView(isReplay: true) { showTour = false }
         }
         .documentPicker(picker) { kind, name, data in

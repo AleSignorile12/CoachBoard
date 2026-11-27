@@ -51,7 +51,7 @@ private func countdown(to date: Date, from now: Date) -> String {
 /// Soft blue wash behind the Home Screen widgets, like the app's background.
 struct WidgetBackground: View {
     var body: some View {
-        LinearGradient(colors: [Color.accentColor.opacity(0.16), Color.accentColor.opacity(0.04)],
+        LinearGradient(colors: [Color("AccentColor").opacity(0.16), Color("AccentColor").opacity(0.04)],
                        startPoint: .topLeading, endPoint: .bottomTrailing)
             .background(Color(.systemBackground))
     }

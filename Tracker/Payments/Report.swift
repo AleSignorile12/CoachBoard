@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// PDF reports for the club: one month (payments + practice log) or a whole season (September to August, a grid
+/// PDF reports for the club: one month (payments + practice log) or a whole season (twelve months from the season's start, a grid
 /// of kids by month). Built from SwiftUI views, one A4 page at a time, always in light colors.
 enum Report: Hashable {
     case month(Int)
@@ -61,10 +61,8 @@ enum Report: Hashable {
 
     private func monthBlocks(_ key: Int, _ data: ReportData) -> [ReportSection] {
         let entries = data.entries(month: key)
-        let registrations = entries.filter(\.registrationPaid).count
-        let registrationTotal = entries.reduce(0) { $0 + $1.registrationTotal }
-        let total = entries.reduce(0) { $0 + $1.amount } + registrationTotal
-        let collected = entries.filter(\.paid).reduce(0) { $0 + $1.amount } + registrationTotal
+        let total = entries.reduce(0) { $0 + $1.lineTotal }
+        let collected = entries.reduce(0) { $0 + $1.collected }
         let days = data.practiceDays(month: key)
         let held = days.filter { $0.logged && $0.held }.count
         let missed = days.filter { $0.logged && !$0.held }.count
@@ -72,20 +70,21 @@ enum Report: Hashable {
         var sections = [ReportSection(rows: [
             ReportHeader(kicker: tr("Monthly Report"), title: monthTitle(key), coach: data.coachName).block,
             ReportTotals(items: [
-                (tr("Collected"), "\(collected) €"),
-                (tr("Missing"), "\(total - collected) €"),
-                (tr("Total"), "\(total) €"),
-                (tr("Paid"), "\(entries.filter(\.paid).count)/\(entries.count)"),
+                (tr("Collected"), Money.format(collected)),
+                (tr("Missing"), Money.format(total - collected)),
+                (tr("Total"), Money.format(total)),
+                (tr("Paid"), "\(entries.filter(\.settled).count)/\(entries.count)"),
                 (tr("Practices"), "\(held)"),
             ]).block,
         ])]
 
         let columns: [ReportColumn] = [
             .init(tr("Kid"), width: nil),
-            .init(tr("Fee"), width: 110),
-            .init(tr("Amount"), width: 60, alignment: .trailing),
-            .init(tr("Monthly Fee"), width: 90),
-            .init(tr("Registration"), width: 90),
+            .init(tr("Fee"), width: 100),
+            .init(tr("Amount"), width: 56, alignment: .trailing),
+            .init(tr("Monthly Fee"), width: 76),
+            .init(tr("Registration"), width: 76),
+            .init(tr("Extras"), width: 70, alignment: .trailing),
         ]
         sections.append(ReportSection(
             title: ReportSectionTitle(text: tr("Payments")).block,
@@ -95,10 +94,11 @@ enum Report: Hashable {
                 : entries.map { entry in
                     ReportRow(columns: columns, cells: [
                         .text(entry.kid.map { "\($0.flag) \($0.fullName)" } ?? ""),
-                        .text(feeTitle(entry.fee)),
-                        .text("\(entry.amount) €"),
+                        .text(feeTitle(entry)),
+                        .text(Money.format(entry.amount)),
                         entry.paid ? .good(tr("Paid")) : .bad(tr("Not paid")),
-                        entry.registrationPaid ? .good("\(entry.registrationAmount) €") : .text("–"),
+                        entry.registrationPaid ? .good(Money.format(entry.registrationAmount)) : .text("–"),
+                        extras(entry),
                     ]).block
                 }
         ))
@@ -127,15 +127,14 @@ enum Report: Hashable {
     // MARK: Season
 
     private func seasonBlocks(_ season: Int, _ data: ReportData) -> [ReportSection] {
-        let months = (0..<12).map { Month.add($0, to: season * 100 + 9) }
+        let months = (0..<12).map { Month.add($0, to: Month.seasonStart(season)) }
         let entries = data.entries(season: season)
         let byKid = Dictionary(grouping: entries.filter { $0.kid != nil }, by: { $0.kid!.persistentModelID })
         let kids = byKid.values.compactMap(\.first?.kid)
             .sorted { $0.fullName.localizedStandardCompare($1.fullName) == .orderedAscending }
         let registrations = entries.filter(\.registrationPaid).count
-        let registrationTotal = entries.reduce(0) { $0 + $1.registrationTotal }
-        let total = entries.reduce(0) { $0 + $1.amount } + registrationTotal
-        let collected = entries.filter(\.paid).reduce(0) { $0 + $1.amount } + registrationTotal
+        let total = entries.reduce(0) { $0 + $1.lineTotal }
+        let collected = entries.reduce(0) { $0 + $1.collected }
         let practice = months.map { key in
             let days = data.practiceDays(month: key)
             return (held: days.filter { $0.logged && $0.held }.count, missed: days.filter { $0.logged && !$0.held }.count)
@@ -144,9 +143,9 @@ enum Report: Hashable {
         var sections = [ReportSection(rows: [
             ReportHeader(kicker: tr("Season Report"), title: Month.seasonTitle(season), coach: data.coachName).block,
             ReportTotals(items: [
-                (tr("Collected"), "\(collected) €"),
-                (tr("Missing"), "\(total - collected) €"),
-                (tr("Total"), "\(total) €"),
+                (tr("Collected"), Money.format(collected)),
+                (tr("Missing"), Money.format(total - collected)),
+                (tr("Total"), Money.format(total)),
                 (tr("Registrations"), "\(registrations)"),
                 (tr("Practices"), "\(practice.reduce(0) { $0 + $1.held })"),
             ]).block,
@@ -159,14 +158,14 @@ enum Report: Hashable {
                .init(tr("Paid"), width: 56, alignment: .trailing)]
         var rows: [ReportBlock] = kids.map { kid in
             let mine = byKid[kid.persistentModelID] ?? []
-            let paid = mine.filter(\.paid).reduce(0) { $0 + $1.amount } + mine.reduce(0) { $0 + $1.registrationTotal }
+            let paid = mine.reduce(0) { $0 + $1.collected }
             let registration = mine.first(where: \.registrationPaid).map { monthShort($0.month) }
             return ReportRow(columns: columns, cells: [.text("\(kid.flag) \(kid.fullName)")]
                 + months.map { key in
                     guard let entry = mine.first(where: { $0.month == key }) else { return .text("") }
-                    return entry.paid ? .good("✓") : .bad("✗")
+                    return entry.settled ? .good("✓") : .bad("✗")
                 }
-                + [registration.map { .good($0) } ?? .text("–"), .text("\(paid) €")]).block
+                + [registration.map { .good($0) } ?? .text("–"), .text(Money.format(paid))]).block
         }
         if kids.isEmpty { rows = [ReportNote(text: tr("No payments recorded this season.")).block] }
         sections.append(ReportSection(
@@ -185,15 +184,14 @@ enum Report: Hashable {
             return .text("\(value)")
         }
         func monthTotal(_ key: Int, paidOnly: Bool) -> Int {
-            entries.filter { $0.month == key && (!paidOnly || $0.paid) }.reduce(0) { $0 + $1.amount }
-                + entries.filter { $0.month == key }.reduce(0) { $0 + $1.registrationTotal }
+            entries.filter { $0.month == key }.reduce(0) { $0 + (paidOnly ? $1.collected : $1.lineTotal) }
         }
         sections.append(ReportSection(
             title: ReportSectionTitle(text: tr("Month by Month")).block,
             header: ReportRow(columns: perMonth, cells: perMonth.map { .text($0.title) }, isHeader: true).block,
             rows: [
-                ReportRow(columns: perMonth, cells: [.text(tr("Collected (€)"))] + months.map { cell($0, monthTotal($0, paidOnly: true)) } + [.text("\(collected) €")]).block,
-                ReportRow(columns: perMonth, cells: [.text(tr("Total (€)"))] + months.map { cell($0, monthTotal($0, paidOnly: false)) } + [.text("\(total) €")]).block,
+                ReportRow(columns: perMonth, cells: [.text(tr("Collected (\(Money.symbol))"))] + months.map { cell($0, monthTotal($0, paidOnly: true)) } + [.text(Money.format(collected))]).block,
+                ReportRow(columns: perMonth, cells: [.text(tr("Total (\(Money.symbol))"))] + months.map { cell($0, monthTotal($0, paidOnly: false)) } + [.text(Money.format(total))]).block,
                 ReportRow(columns: perMonth, cells: [.text(tr("Practices held"))] + zip(months, practice).map { cell($0, $1.held, good: true) } + [.text("\(practice.reduce(0) { $0 + $1.held })")]).block,
                 ReportRow(columns: perMonth, cells: [.text(tr("Practices missed"))] + zip(months, practice).map { cell($0, $1.missed, bad: true) } + [.text("\(practice.reduce(0) { $0 + $1.missed })")]).block,
             ]
@@ -245,12 +243,25 @@ private func tr(_ resource: LocalizedStringResource) -> String {
     Month.date(key).formatted(.dateTime.month(.abbreviated).locale(ReportText.locale))
 }
 
-@MainActor private func feeTitle(_ fee: Fee) -> String {
-    switch fee {
-    case .standard: tr("Standard")
-    case .sibling: tr("With sibling")
-    case .friend: tr("With friend")
+/// The plan's name: the coach's own name as written, the built-in ones in the report's language.
+@MainActor private func feeTitle(_ entry: PaymentEntry) -> String {
+    let plan = entry.fee.plan
+    if let plan, plan.name.trimmingCharacters(in: .whitespaces).isEmpty {
+        switch plan.id {
+        case "standard": return tr("Standard")
+        case "sibling": return tr("With sibling")
+        case "friend": return tr("With friend")
+        default: break
+        }
     }
+    return entry.feeName
+}
+
+/// A row's one-off charges: their total, blue when all paid, orange while something is owed.
+@MainActor private func extras(_ entry: PaymentEntry) -> ReportCell {
+    guard entry.chargesTotal > 0 else { return .text("–") }
+    let text = Money.format(entry.chargesTotal)
+    return entry.chargesPaid == entry.chargesTotal ? .good(text) : .bad(text)
 }
 
 // MARK: - Data
@@ -273,7 +284,7 @@ private struct ReportData {
     /// Same order as the Payments tab: unpaid first, then A–Z.
     func entries(month: Int) -> [PaymentEntry] {
         payments.filter { $0.month == month }.sorted { a, b in
-            if a.paid != b.paid { return !a.paid }
+            if a.settled != b.settled { return !a.settled }
             return (a.kid?.fullName ?? "").localizedStandardCompare(b.kid?.fullName ?? "") == .orderedAscending
         }
     }

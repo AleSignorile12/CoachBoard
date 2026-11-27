@@ -48,9 +48,24 @@ struct AmbientBackground: View {
 
 extension View {
     /// Puts the moving background behind a List or Form, with the cards in Liquid Glass on top.
-    func ambientBackground() -> some View {
+    /// `macWidth`: how wide the cards may get in a big Mac window.
+    func ambientBackground(macWidth: CGFloat = 760) -> some View {
         scrollContentBackground(.hidden)
+            .macReadableWidth(macWidth)
             .background { AmbientBackground() }
             .background { ListCardCorners() }
+    }
+}
+
+extension View {
+    /// On the Mac the window can be very wide: the cards keep a comfortable width in the middle, while the
+    /// background still fills the window. Nothing changes on iPhone.
+    @ViewBuilder
+    func macReadableWidth(_ width: CGFloat = 760) -> some View {
+#if targetEnvironment(macCatalyst)
+        frame(maxWidth: width).frame(maxWidth: .infinity)
+#else
+        self
+#endif
     }
 }

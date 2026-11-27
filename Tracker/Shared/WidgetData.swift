@@ -13,9 +13,9 @@ extension WidgetSnapshot {
             birthdays: kids.filter { !$0.birthDateUnknown }.map { Birthday(name: shortName($0), birthDate: $0.birthDate) },
             month: month,
             monthTitle: Month.title(month),
-            paid: list.filter(\.paid).count,
+            paid: list.filter(\.settled).count,
             total: list.count,
-            unpaid: list.filter { !$0.paid }.compactMap { $0.kid.map(shortName) }
+            unpaid: list.filter { !$0.settled }.compactMap { $0.kid.map(shortName) }
                 .sorted { $0.localizedStandardCompare($1) == .orderedAscending },
             trainingWeekdays: TrainingDays.decode(trainingRaw).sorted()
         )

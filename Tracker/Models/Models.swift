@@ -58,6 +58,12 @@ final class Kid {
         certificationCount == FileKind.certifications.count
     }
 
+    /// 0…1, how many of the tracked certificates are in (1 when none are tracked).
+    var certificationProgress: Double {
+        let tracked = FileKind.certifications.count
+        return tracked == 0 ? 1 : Double(certificationCount) / Double(tracked)
+    }
+
     /// True when the birthday falls in the given month (yyyymm).
     func hasBirthday(inMonth key: Int) -> Bool {
         !birthDateUnknown && Calendar.current.component(.month, from: birthDate) == key % 100
@@ -70,7 +76,7 @@ final class Kid {
 
     /// Fee used last time this kid was on a month list, so new months start with the right amount.
     var lastFee: Fee {
-        payments?.max { $0.month < $1.month }?.fee ?? .standard
+        payments?.max { $0.month < $1.month }?.fee.orFirst ?? .first
     }
 }
 
@@ -144,10 +150,27 @@ nonisolated enum TrainingDays {
 
 // MARK: - Files
 
-enum FileKind: String, CaseIterable {
-    case idCopy, medicalCertificate, registrationForm, coachID, other
+/// What a stored file is: one of the built-in slots, or a certificate the coach named in Settings
+/// ("custom-…"). Saved as the bare string in `StoredFile.kindRaw`, exactly like the old enum, so every
+/// existing file keeps its kind.
+nonisolated struct FileKind: RawRepresentable, Hashable, Sendable {
+    let rawValue: String
 
-    static let certifications: [FileKind] = [.medicalCertificate, .idCopy, .registrationForm]
+    init(rawValue: String) { self.rawValue = rawValue }
+
+    static let idCopy = FileKind(rawValue: "idCopy")
+    static let medicalCertificate = FileKind(rawValue: "medicalCertificate")
+    static let registrationForm = FileKind(rawValue: "registrationForm")
+    static let coachID = FileKind(rawValue: "coachID")
+    static let other = FileKind(rawValue: "other")
+
+    /// The certificates the app can track out of the box.
+    static let builtInCertifications: [FileKind] = [.medicalCertificate, .idCopy, .registrationForm]
+
+    /// The certificates this coach tracks, in order (My Profile › Certificates).
+    static var certifications: [FileKind] { CertificationTypes.active }
+
+    var isCustom: Bool { rawValue.hasPrefix("custom-") }
 
     var title: String {
         switch self {
@@ -156,6 +179,7 @@ enum FileKind: String, CaseIterable {
         case .registrationForm: String(localized: "Registration Form")
         case .coachID: String(localized: "ID Document")
         case .other: String(localized: "File")
+        default: CertificationTypes.name(of: self) ?? String(localized: "Custom Certificate")
         }
     }
 
@@ -165,7 +189,40 @@ enum FileKind: String, CaseIterable {
         case .medicalCertificate: "cross.case"
         case .registrationForm: "doc.text"
         case .other: "doc"
+        default: "rosette"
         }
+    }
+}
+
+/// Which certificates are tracked, saved on this device (like the fees): the built-in ones can be switched off,
+/// and the coach can add their own with any name (insurance, federation card…).
+nonisolated enum CertificationTypes {
+    static let storageKey = "certificationTypes"
+
+    struct Item: Codable, Hashable, Identifiable {
+        var id: String
+        var name: String?
+        var isOn: Bool = true
+    }
+
+    /// Every built-in certificate (on unless switched off) followed by the coach's own.
+    static func items(_ raw: String? = UserDefaults.standard.string(forKey: storageKey)) -> [Item] {
+        let saved = raw.flatMap { try? JSONDecoder().decode([Item].self, from: Data($0.utf8)) } ?? []
+        let builtIns = FileKind.builtInCertifications.map { kind in
+            saved.first { $0.id == kind.rawValue } ?? Item(id: kind.rawValue)
+        }
+        return builtIns + saved.filter { FileKind(rawValue: $0.id).isCustom }
+    }
+
+    static func save(_ items: [Item]) {
+        guard let data = try? JSONEncoder().encode(items) else { return }
+        UserDefaults.standard.set(String(decoding: data, as: UTF8.self), forKey: storageKey)
+    }
+
+    static var active: [FileKind] { items().filter(\.isOn).map { FileKind(rawValue: $0.id) } }
+
+    static func name(of kind: FileKind) -> String? {
+        items().first { $0.id == kind.rawValue }?.name.flatMap { $0.isEmpty ? nil : $0 }
     }
 }
 
@@ -184,7 +241,7 @@ final class StoredFile {
         self.data = data
     }
 
-    var kind: FileKind { FileKind(rawValue: kindRaw) ?? .other }
+    var kind: FileKind { FileKind(rawValue: kindRaw) }
 }
 
 extension ModelContext {
@@ -202,53 +259,232 @@ extension ModelContext {
 
 // MARK: - Payments
 
-enum Fee: String, CaseIterable, Identifiable {
-    case standard, sibling, friend
+/// How often a fee plan is charged. Quarterly and yearly plans fall due in the first month of each quarter or of
+/// the season (counted from the month the season starts); the other months show nothing to pay.
+enum FeeFrequency: String, Codable, CaseIterable, Identifiable {
+    case monthly, quarterly, yearly
 
     var id: String { rawValue }
 
-    /// The amount set in My Profile › Fees, used for new month lists and when the fee is changed.
-    var amount: Int { FeeAmounts.monthly(self) }
-
-    /// Registration fee, paid once per kid per season (as set in My Profile › Fees).
-    static var registration: Int { FeeAmounts.registration }
-
     var title: String {
         switch self {
-        case .standard: String(localized: "Standard")
-        case .sibling: String(localized: "With sibling")
-        case .friend: String(localized: "With friend")
+        case .monthly: String(localized: "Monthly")
+        case .quarterly: String(localized: "Quarterly")
+        case .yearly: String(localized: "Yearly")
         }
     }
 
-    var icon: String {
+    /// True in the months this frequency asks for money.
+    func isDue(inMonth key: Int) -> Bool {
+        let fromStart = ((key % 100) - SeasonSettings.startMonth + 12) % 12
         switch self {
-        case .standard: "person.fill"
-        case .sibling: "person.2.fill"
-        case .friend: "person.2.wave.2.fill"
+        case .monthly: return true
+        case .quarterly: return fromStart % 3 == 0
+        case .yearly: return fromStart == 0
         }
     }
 }
 
-/// The fee amounts the coach chose in My Profile › Fees, in whole euros.
+/// One fee the coach charges, as set in My Profile › Fees: a name, an amount and how often.
+/// The first three are the original ones (standard, sibling, friend) and keep their translated names until
+/// the coach renames them.
+struct FeePlan: Codable, Hashable, Identifiable {
+    var id: String
+    var name: String = ""
+    var amount: Int
+    var frequency: FeeFrequency = .monthly
+
+    var isBuiltIn: Bool { ["standard", "sibling", "friend"].contains(id) }
+
+    /// What the coach named it, or the built-in name.
+    var title: String {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty { return trimmed }
+        switch id {
+        case "standard": return String(localized: "Standard")
+        case "sibling": return String(localized: "With sibling")
+        case "friend": return String(localized: "With friend")
+        default: return String(localized: "New Fee")
+        }
+    }
+
+    var icon: String {
+        switch id {
+        case "standard": "person.fill"
+        case "sibling": "person.2.fill"
+        case "friend": "person.2.wave.2.fill"
+        default: "tag.fill"
+        }
+    }
+}
+
+/// The coach's fee plans (synced through iCloud with the other settings, see SettingsSync).
+enum FeePlans {
+    static let storageKey = "feePlans"
+
+    /// The saved plans, or the original three with the amounts set before plans existed.
+    static func all(_ raw: String? = UserDefaults.standard.string(forKey: storageKey)) -> [FeePlan] {
+        if let raw, let plans = try? JSONDecoder().decode([FeePlan].self, from: Data(raw.utf8)), !plans.isEmpty {
+            return plans
+        }
+        return [
+            FeePlan(id: "standard", amount: FeeAmounts.value(FeeAmounts.standardKey, FeeAmounts.original.standard)),
+            FeePlan(id: "sibling", amount: FeeAmounts.value(FeeAmounts.siblingKey, FeeAmounts.original.sibling)),
+            FeePlan(id: "friend", amount: FeeAmounts.value(FeeAmounts.friendKey, FeeAmounts.original.friend)),
+        ]
+    }
+
+    static func save(_ plans: [FeePlan]) {
+        guard let data = try? JSONEncoder().encode(plans) else { return }
+        UserDefaults.standard.set(String(decoding: data, as: UTF8.self), forKey: storageKey)
+    }
+
+    static func plan(_ id: String) -> FeePlan? { all().first { $0.id == id } }
+}
+
+/// A kid's fee plan on a month list (stored by the plan's id). Was an enum of three fixed fees; the ids of those
+/// three are kept, so older saved data reads the same.
+struct Fee: RawRepresentable, Hashable, Identifiable, Sendable {
+    let rawValue: String
+
+    init(rawValue: String) { self.rawValue = rawValue }
+
+    static let standard = Fee(rawValue: "standard")
+    static let sibling = Fee(rawValue: "sibling")
+    static let friend = Fee(rawValue: "friend")
+
+    var id: String { rawValue }
+
+    /// Every plan the coach has set up, in their order.
+    static var allCases: [Fee] { FeePlans.all().map { Fee(rawValue: $0.id) } }
+
+    /// The plans to choose from, plus `current` if its plan was deleted meanwhile (so a picker still shows it).
+    static func choices(including current: Fee) -> [Fee] {
+        let all = allCases
+        return all.contains(current) ? all : all + [current]
+    }
+
+    /// The first plan: new kids start with it.
+    static var first: Fee { allCases.first ?? .standard }
+
+    /// This plan, or the first one if this one was deleted (for new month lists).
+    var orFirst: Fee { plan == nil ? .first : self }
+
+    var plan: FeePlan? { FeePlans.plan(rawValue) }
+
+    var title: String { plan?.title ?? String(localized: "Deleted Fee") }
+    var icon: String { plan?.icon ?? "tag" }
+    var frequency: FeeFrequency { plan?.frequency ?? .monthly }
+
+    /// The plan's amount as set in My Profile › Fees.
+    var amount: Int { plan?.amount ?? 0 }
+
+    /// What this plan costs in a given month: its amount when due, 0 in the months a quarterly or yearly plan skips.
+    func amount(inMonth key: Int) -> Int { frequency.isDue(inMonth: key) ? amount : 0 }
+
+    /// Registration fee, paid once per kid per season (as set in My Profile › Fees).
+    static var registration: Int { FeeAmounts.registration }
+}
+
+/// The original fee amounts (before fee plans) and the registration amount, in whole units of the currency.
 enum FeeAmounts {
     static let standardKey = "feeStandard", siblingKey = "feeSibling", friendKey = "feeFriend", registrationKey = "feeRegistration"
 
     /// The amounts before they could be changed. Payments saved back then have no amount of their own and use these.
     static let original = (standard: 30, sibling: 25, friend: 25, registration: 30)
 
-    static func monthly(_ fee: Fee) -> Int {
-        switch fee {
-        case .standard: value(standardKey, original.standard)
-        case .sibling: value(siblingKey, original.sibling)
-        case .friend: value(friendKey, original.friend)
-        }
-    }
-
     static var registration: Int { value(registrationKey, original.registration) }
 
-    private static func value(_ key: String, _ fallback: Int) -> Int {
+    static func value(_ key: String, _ fallback: Int) -> Int {
         UserDefaults.standard.object(forKey: key) as? Int ?? fallback
+    }
+}
+
+/// The season: the month it starts in and whether the club asks for a registration fee each season.
+enum SeasonSettings {
+    static let startKey = "seasonStartMonth", registrationOnKey = "feeRegistrationOn"
+
+    /// 1…12, September unless the coach picked another month.
+    static var startMonth: Int {
+        let value = UserDefaults.standard.object(forKey: startKey) as? Int ?? 9
+        return (1...12).contains(value) ? value : 9
+    }
+
+    static var registrationOn: Bool { UserDefaults.standard.object(forKey: registrationOnKey) as? Bool ?? true }
+
+    /// "September – August".
+    static var monthsTitle: String {
+        let names = Calendar.current.standaloneMonthSymbols
+        return "\(names[startMonth - 1].localizedCapitalized) – \(names[(startMonth + 10) % 12].localizedCapitalized)"
+    }
+}
+
+/// The currency amounts are shown in. Amounts are whole numbers, so changing it only changes the symbol.
+enum Money {
+    static let storageKey = "currency"
+
+    static var code: String { UserDefaults.standard.string(forKey: storageKey) ?? "EUR" }
+
+    /// "30 €", "$30", "CHF 30"…
+    static func format(_ amount: Int) -> String {
+        amount.formatted(.currency(code: code).precision(.fractionLength(0)))
+    }
+
+    /// "€", "$"…
+    static var symbol: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = code
+        return formatter.currencySymbol ?? code
+    }
+
+    /// "Euro (€)".
+    static func name(_ code: String) -> String {
+        let name = Locale.current.localizedString(forCurrencyCode: code) ?? code
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = code
+        let symbol = formatter.currencySymbol ?? code
+        return symbol == code ? "\(name.localizedCapitalized) (\(code))" : "\(name.localizedCapitalized) (\(symbol))"
+    }
+
+    /// The SF Symbol for the currency in a circle, with a banknote for currencies without one.
+    static var icon: String {
+        let base: String? = switch code {
+        case "EUR": "eurosign"
+        case "USD", "CAD", "AUD", "NZD", "MXN", "ARS", "CLP", "COP", "SGD", "HKD": "dollarsign"
+        case "GBP": "sterlingsign"
+        case "CHF": "francsign"
+        case "JPY", "CNY": "yensign"
+        case "INR": "indianrupeesign"
+        case "TRY": "turkishlirasign"
+        case "BRL": "brazilianrealsign"
+        case "RUB": "rublesign"
+        case "KRW": "wonsign"
+        case "UAH": "hryvniasign"
+        case "PHP": "pesosign"
+        case "ILS": "shekelsign"
+        case "PLN": "polishzlotysign"
+        case "BDT": "bangladeshitakasign"
+        default: nil
+        }
+        return base.map { "\($0).circle" } ?? "banknote"
+    }
+}
+
+/// A one-off charge on top of the monthly fee (kit, tournament, insurance, camp…), with its own paid tick.
+/// Added in v1.6: a new model is safe for existing data.
+@Model
+final class ExtraCharge {
+    var title: String = ""
+    var amount: Int = 0
+    var paid: Bool = false
+    var createdAt: Date = Date.now
+    var entry: PaymentEntry?
+
+    init(title: String, amount: Int) {
+        self.title = title
+        self.amount = amount
     }
 }
 
@@ -257,26 +493,46 @@ final class PaymentEntry {
     /// Month as yyyymm, e.g. 202611.
     var month: Int = 0
     var paid: Bool = false
-    /// The fee type and the amounts it had when set, as "standard|30|30" (type, monthly, registration), so later
-    /// changes in Fees don't rewrite past months. Entries saved before that are just "standard".
+    /// The fee plan and the amounts it had when set, as "standard|30|30|Standard" (plan id, amount this month,
+    /// registration, plan name), so later changes in Fees don't rewrite past months. Older entries are
+    /// "standard|30|30" or just "standard".
     var feeRaw: String = Fee.standard.rawValue
     /// Season registration paid in this month (at most one entry per kid per season).
     var registrationPaid: Bool = false
     var kid: Kid?
+
+    // Added in v1.6. Optional because iCloud sync requires it.
+    @Relationship(deleteRule: .cascade, inverse: \ExtraCharge.entry)
+    var charges: [ExtraCharge]? = []
 
     init(month: Int, fee: Fee) {
         self.month = month
         self.fee = fee
     }
 
-    private var parts: [Substring] { feeRaw.split(separator: "|") }
+    private var parts: [Substring] { feeRaw.split(separator: "|", omittingEmptySubsequences: false) }
 
     var fee: Fee {
-        get { parts.first.flatMap { Fee(rawValue: String($0)) } ?? .standard }
-        set { feeRaw = "\(newValue.rawValue)|\(newValue.amount)|\(Fee.registration)" }
+        get { parts.first.map { Fee(rawValue: String($0)) } ?? .standard }
+        set {
+            let old = parts.count > 1 ? amount : nil
+            // A deleted plan keeps the amount and name it had.
+            let new = newValue.plan == nil ? (newValue == fee ? amount : 0) : newValue.amount(inMonth: month)
+            let name = (newValue.plan?.title ?? feeName).replacingOccurrences(of: "|", with: "/")
+            feeRaw = "\(newValue.rawValue)|\(new)|\(Fee.registration)|\(name)"
+            // Nothing to pay this month (a quarterly plan's off month, a free plan): counts as paid.
+            if new == 0 { paid = true } else if old == 0 { paid = false }
+        }
     }
 
-    /// The monthly amount for this kid this month.
+    /// The plan's name, also after the plan was deleted.
+    var feeName: String {
+        if let plan = fee.plan { return plan.title }
+        if parts.count > 3, !parts[3].isEmpty { return String(parts[3]) }
+        return fee.title
+    }
+
+    /// The fee for this kid this month.
     var amount: Int {
         if parts.count > 1, let value = Int(parts[1]) { return value }
         return fee == .standard ? FeeAmounts.original.standard : FeeAmounts.original.sibling
@@ -291,7 +547,22 @@ final class PaymentEntry {
     /// The registration counted in this month's totals: its amount if paid this month, otherwise 0.
     var registrationTotal: Int { registrationPaid ? registrationAmount : 0 }
 
-    /// Takes the amounts currently set in Fees, keeping the fee type.
+    /// One-off charges, oldest first.
+    var sortedCharges: [ExtraCharge] { (charges ?? []).sorted { $0.createdAt < $1.createdAt } }
+
+    var chargesTotal: Int { (charges ?? []).reduce(0) { $0 + $1.amount } }
+    var chargesPaid: Int { (charges ?? []).filter(\.paid).reduce(0) { $0 + $1.amount } }
+
+    /// Everything asked of this kid this month: fee, registration paid this month and one-off charges.
+    var lineTotal: Int { amount + registrationTotal + chargesTotal }
+
+    /// What has come in so far.
+    var collected: Int { (paid ? amount : 0) + registrationTotal + chargesPaid }
+
+    /// Fee and every charge paid.
+    var settled: Bool { paid && (charges ?? []).allSatisfy(\.paid) }
+
+    /// Takes the amounts currently set in Fees, keeping the fee plan.
     func updateAmounts() { fee = fee }
 }
 
@@ -361,10 +632,14 @@ enum Month {
         date(key).formatted(.dateTime.month(.abbreviated).year())
     }
 
-    /// Season = September to August, named by its starting year (Sep 2026 – Aug 2027 → 2026).
-    static func season(_ key: Int) -> Int {
-        key % 100 >= 9 ? key / 100 : key / 100 - 1
+    /// Season = from the start month (September unless changed in Fees) for twelve months, named by its
+    /// starting year (Sep 2026 – Aug 2027 → 2026).
+    static func season(_ key: Int, start: Int = SeasonSettings.startMonth) -> Int {
+        key % 100 >= start ? key / 100 : key / 100 - 1
     }
+
+    /// The first month of a season (yyyymm).
+    static func seasonStart(_ season: Int) -> Int { season * 100 + SeasonSettings.startMonth }
 
     static func seasonTitle(_ season: Int) -> String {
         "\(season)/\(String(format: "%02d", (season + 1) % 100))"
@@ -384,7 +659,8 @@ enum SelfCheck {
         assert(old.fee == .sibling && old.amount == 25 && old.registrationAmount == 30)
         old.feeRaw = "friend|28|35"
         assert(old.fee == .friend && old.amount == 28 && old.registrationAmount == 35)
-        assert(Month.season(202609) == 2026 && Month.season(202706) == 2026 && Month.season(202608) == 2025)
+        assert(Month.season(202609, start: 9) == 2026 && Month.season(202706, start: 9) == 2026 && Month.season(202608, start: 9) == 2025)
+        assert(Month.season(202601, start: 1) == 2026 && Month.season(202612, start: 1) == 2026)
         assert(Month.seasonTitle(2026) == "2026/27" && Month.seasonTitle(2099) == "2099/00")
         assert(Country.flag("it") == "🇮🇹")
         assert(TrainingDays.decode("3,5") == [3, 5] && TrainingDays.decode("") == [] && TrainingDays.decode("9,x,2") == [2])

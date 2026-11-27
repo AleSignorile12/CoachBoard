@@ -171,12 +171,17 @@ struct KidProfileSheet: View {
     let isNew: Bool
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    /// On the Mac these open as a panel over the window (Mac/MacShell.swift), which closes differently.
+    @Environment(\.macClose) private var macClose
+    private func close() { if let macClose { macClose() } else { dismiss() } }
     @State private var picker = DocumentPicker()
     @State private var askDelete = false
     @State private var deleteOnClose = false
 
     private var otherFiles: [StoredFile] {
-        (kid.files ?? []).filter { $0.kind == .other }.sorted { $0.addedAt < $1.addedAt }
+        // Extra files, plus any certificate whose type is no longer tracked (so nothing disappears).
+        (kid.files ?? []).filter { $0.kind == .other || ($0.kind.isCustom && !FileKind.certifications.contains($0.kind)) }
+            .sorted { $0.addedAt < $1.addedAt }
     }
 
     var body: some View {
@@ -255,23 +260,23 @@ struct KidProfileSheet: View {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(role: .cancel) {
                             deleteOnClose = true
-                            dismiss()
+                            close()
                         }
                     }
                     ToolbarItem(placement: .confirmationAction) {
-                        Button(role: .confirm) { dismiss() }
+                        Button(role: .confirm) { close() }
                             .disabled(kid.firstName.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 } else {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button(role: .close) { dismiss() }
+                        Button(role: .close) { close() }
                     }
                 }
             }
             .confirmationDialog("Delete \(kid.fullName)?", isPresented: $askDelete, titleVisibility: .visible) {
                 Button("Delete Kid", role: .destructive) {
                     deleteOnClose = true
-                    dismiss()
+                    close()
                 }
             } message: {
                 Text("This also deletes their files and payment history.")
