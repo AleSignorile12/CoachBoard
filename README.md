@@ -5,17 +5,23 @@
 **Your whole team in one place.** CoachBoard is an iPhone app for coaching a kids' team: who's on the team, who has paid this month, which documents are still missing, whose birthday is coming up, when the next practice is, and an offline translator for talking with kids who speak another language.
 
 <p align="center">
-  <img src=".github/screenshots/1-welcome.png" width="19%" alt="Welcome screen: what the app does, with page dots and a Continue button">
-  <img src=".github/screenshots/2-kids.png" width="19%" alt="Kids: the team with flags, ages and nationalities">
-  <img src=".github/screenshots/3-payments.png" width="19%" alt="Payments: collected and missing this month, with fees and registrations">
-  <img src=".github/screenshots/4-certs.png" width="19%" alt="Certifications: how many documents each kid has handed in">
-  <img src=".github/screenshots/5-translator.png" width="19%" alt="Translator: Italian to Croatian, with saved phrases">
+  <img src=".github/screenshots/welcome.png" width="19%" alt="Welcome screen: what the app does, with page dots and a Continue button">
+  <img src=".github/screenshots/kids.png" width="19%" alt="Kids: the team with flags, ages and nationalities, glass cards over a basketball court, search at the bottom">
+  <img src=".github/screenshots/payments.png" width="19%" alt="Payments: collected and missing this month, with fees and registrations">
+  <img src=".github/screenshots/certs.png" width="19%" alt="Certifications: how many documents each kid has handed in">
+  <img src=".github/screenshots/translator.png" width="19%" alt="Translator: Italian to Croatian, with saved phrases">
 </p>
 <p align="center">
-  <img src=".github/screenshots/6-payments-dark.png" width="19%" alt="Payments in dark mode">
-  <img src=".github/screenshots/7-calendar.png" width="19%" alt="Practice calendar: training days, held and missed practices">
-  <img src=".github/screenshots/8-widgets.png" width="19%" alt="Widgets: next birthdays, this month's payments and the next practice">
-  <img src=".github/screenshots/9-report.png" width="26%" alt="Monthly PDF report: totals, payments and the practice log">
+  <img src=".github/screenshots/payments-dark.png" width="19%" alt="Payments in dark mode">
+  <img src=".github/screenshots/kids-dark.png" width="19%" alt="Kids in dark mode">
+  <img src=".github/screenshots/volleyball-dark.png" width="19%" alt="Certifications in dark mode over a volleyball court">
+  <img src=".github/screenshots/calendar.png" width="19%" alt="Practice calendar: training days, held and missed practices">
+  <img src=".github/screenshots/fees.png" width="19%" alt="Fees: the standard, sibling, friend and registration amounts">
+</p>
+<p align="center">
+  <img src=".github/screenshots/football.png" width="19%" alt="Kids over a football court">
+  <img src=".github/screenshots/widgets.png" width="19%" alt="Widgets: next birthdays, this month's payments and the next practice, in small and medium sizes">
+  <img src=".github/screenshots/report.png" width="26%" alt="Monthly PDF report: totals, payments and the practice log">
 </p>
 
 <sub>The kids in the screenshots are made up.</sub>
